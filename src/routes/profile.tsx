@@ -63,7 +63,7 @@ function Profile() {
 
   const save = async () => {
     if (!user) return;
-    const { error } = await supabase.from("profiles").update(draft).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update(draft as never).eq("id", user.id);
     if (error) { toast.error(error.message); return; }
     await refreshProfile();
     setEditing(false);
