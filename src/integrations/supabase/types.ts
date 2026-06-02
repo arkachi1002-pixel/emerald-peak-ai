@@ -14,7 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          equipment: string | null
+          experience_level: string | null
+          id: string
+          main_goal: string | null
+          onboarded: boolean
+          sport_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          equipment?: string | null
+          experience_level?: string | null
+          id: string
+          main_goal?: string | null
+          onboarded?: boolean
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          equipment?: string | null
+          experience_level?: string | null
+          id?: string
+          main_goal?: string | null
+          onboarded?: boolean
+          sport_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          available_minutes: number | null
+          completed_at: string | null
+          created_at: string
+          duration_seconds: number | null
+          energy: number | null
+          id: string
+          plan: Json
+          soreness: number | null
+          status: string
+          user_id: string
+          workout_date: string
+        }
+        Insert: {
+          available_minutes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          energy?: number | null
+          id?: string
+          plan: Json
+          soreness?: number | null
+          status?: string
+          user_id: string
+          workout_date?: string
+        }
+        Update: {
+          available_minutes?: number | null
+          completed_at?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          energy?: number | null
+          id?: string
+          plan?: Json
+          soreness?: number | null
+          status?: string
+          user_id?: string
+          workout_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
