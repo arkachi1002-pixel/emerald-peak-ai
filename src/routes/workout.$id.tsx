@@ -199,6 +199,7 @@ function Section({ sectionKey, icon, title, tone, items, timers, activeKey, disa
                   {ex.reps && <Badge>{ex.reps} reps</Badge>}
                   {ex.duration && <Badge>{ex.duration}</Badge>}
                   {ex.rest && <Badge tone="muted">rest {ex.rest}</Badge>}
+                  <Badge tone="time">~{fmtTarget(ex.target_seconds)}</Badge>
                 </div>
               </div>
 
