@@ -264,12 +264,14 @@ export function generateWorkout(inputs: Inputs): WorkoutPlan {
 }
 
 /** Format seconds into a human-readable string like "3 min", "1.5 min", "45 sec". */
-export function fmtTarget(sec: number): string {
-  if (sec < 60) return `${sec} sec`;
-  if (sec === 60) return "1 min";
-  if (sec % 60 === 0) return `${sec / 60} min`;
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
+export function fmtTarget(sec: number | undefined | null): string {
+  const n = typeof sec === "number" && Number.isFinite(sec) ? Math.max(0, Math.round(sec)) : 0;
+  if (n === 0) return "—";
+  if (n < 60) return `${n} sec`;
+  if (n === 60) return "1 min";
+  if (n % 60 === 0) return `${n / 60} min`;
+  const m = Math.floor(n / 60);
+  const s = n % 60;
   if (s === 30) return `${m}.5 min`;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
