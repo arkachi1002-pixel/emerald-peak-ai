@@ -22,9 +22,9 @@ function AuthPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (session) {
-      router.navigate({ to: profile?.onboarded ? "/dashboard" : "/onboarding" });
-    }
+    if (!session) return;
+    if (!profile) return; // wait for profile before routing
+    router.navigate({ to: profile.onboarded ? "/dashboard" : "/onboarding" });
   }, [session, profile, authLoading, router]);
 
   const submit = async (e: React.FormEvent) => {
