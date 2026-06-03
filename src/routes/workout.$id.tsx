@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Play, Pause, Check, Loader2, Flame, Snowflake, Dumbbell, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Play, Pause, Check, Loader2, Flame, Snowflake, Dumbbell, Sparkles, RotateCcw } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,16 +12,23 @@ export const Route = createFileRoute("/workout/$id")({
   component: WorkoutDetail,
 });
 
+type TimerMap = Record<string, { elapsed: number; done: boolean }>;
+
+function fmt(sec: number) {
+  const m = String(Math.floor(sec / 60)).padStart(2, "0");
+  const s = String(sec % 60).padStart(2, "0");
+  return `${m}:${s}`;
+}
+
 function WorkoutDetail() {
   const { id } = Route.useParams();
   const { user, loading } = useAuth();
   const router = useRouter();
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [status, setStatus] = useState<string>("pending");
-  const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [timers, setTimers] = useState<TimerMap>({});
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
-  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/auth" });
@@ -31,7 +38,7 @@ function WorkoutDetail() {
     if (!user) return;
     supabase
       .from("workouts")
-      .select("plan, status, duration_seconds")
+      .select("plan, status")
       .eq("id", id)
       .eq("user_id", user.id)
       .single()
@@ -39,26 +46,46 @@ function WorkoutDetail() {
         if (error) { toast.error(error.message); return; }
         setPlan(data.plan as WorkoutPlan);
         setStatus(data.status);
-        setElapsed(data.duration_seconds ?? 0);
       });
   }, [id, user]);
 
+  // Single ticking interval drives the currently active exercise
   useEffect(() => {
-    if (running) {
-      intervalRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running]);
+    if (!activeKey) return;
+    const i = window.setInterval(() => {
+      setTimers((t) => {
+        const cur = t[activeKey] ?? { elapsed: 0, done: false };
+        return { ...t, [activeKey]: { ...cur, elapsed: cur.elapsed + 1 } };
+      });
+    }, 1000);
+    return () => clearInterval(i);
+  }, [activeKey]);
+
+  const totalElapsed = useMemo(
+    () => Object.values(timers).reduce((sum, t) => sum + t.elapsed, 0),
+    [timers],
+  );
+
+  const toggle = (key: string) => {
+    setActiveKey((cur) => (cur === key ? null : key));
+    setTimers((t) => (t[key] ? t : { ...t, [key]: { elapsed: 0, done: false } }));
+  };
+  const reset = (key: string) => {
+    if (activeKey === key) setActiveKey(null);
+    setTimers((t) => ({ ...t, [key]: { elapsed: 0, done: false } }));
+  };
+  const markDone = (key: string) => {
+    if (activeKey === key) setActiveKey(null);
+    setTimers((t) => ({ ...t, [key]: { elapsed: t[key]?.elapsed ?? 0, done: !(t[key]?.done) } }));
+  };
 
   const complete = async () => {
     if (!user) return;
-    setRunning(false);
+    setActiveKey(null);
     setCompleting(true);
     const { error } = await supabase
       .from("workouts")
-      .update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: elapsed })
+      .update({ status: "completed", completed_at: new Date().toISOString(), duration_seconds: totalElapsed })
       .eq("id", id);
     setCompleting(false);
     if (error) { toast.error(error.message); return; }
@@ -73,8 +100,6 @@ function WorkoutDetail() {
     </AppShell>
   );
 
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
   const isCompleted = status === "completed";
 
   return (
@@ -95,41 +120,37 @@ function WorkoutDetail() {
           </div>
         </div>
 
-        {/* Timer */}
+        {/* Total + complete */}
         <div className="mb-6 rounded-2xl border border-border bg-card p-6 text-center">
           <div className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-            {isCompleted ? "Final time" : running ? "In progress" : "Ready"}
+            {isCompleted ? "Final total" : "Total time"}
           </div>
-          <div className="mb-4 font-display text-6xl font-bold tabular-nums text-gradient">{mm}:{ss}</div>
-          {!isCompleted && (
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setRunning((r) => !r)}
-                className="flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 font-semibold transition hover:bg-secondary/70"
-              >
-                {running ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> {elapsed > 0 ? "Resume" : "Start"} Workout</>}
-              </button>
-              <button
-                onClick={complete}
-                disabled={completing}
-                className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 glow-primary"
-              >
-                {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Mark Completed
-              </button>
-            </div>
-          )}
-          {isCompleted && (
+          <div className="mb-4 font-display text-5xl font-bold tabular-nums text-gradient">{fmt(totalElapsed)}</div>
+          {!isCompleted ? (
+            <button
+              onClick={complete}
+              disabled={completing}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 glow-primary"
+            >
+              {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Finish Workout
+            </button>
+          ) : (
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 text-sm font-semibold text-primary">
               <Check className="h-4 w-4" /> Completed
             </div>
           )}
         </div>
 
-        {/* Sections */}
-        <Section icon={<Flame className="h-5 w-5 text-accent" />} title="Warm-up" tone="amber" items={plan.warmup} />
-        <Section icon={<Dumbbell className="h-5 w-5 text-primary" />} title="Main workout" tone="primary" items={plan.main} />
-        <Section icon={<Snowflake className="h-5 w-5 text-accent" />} title="Cool-down" tone="amber" items={plan.cooldown} />
+        <Section sectionKey="warmup" icon={<Flame className="h-5 w-5 text-accent" />} title="Warm-up" tone="amber"
+          items={plan.warmup} timers={timers} activeKey={activeKey} disabled={isCompleted}
+          onToggle={toggle} onReset={reset} onDone={markDone} />
+        <Section sectionKey="main" icon={<Dumbbell className="h-5 w-5 text-primary" />} title="Main workout" tone="primary"
+          items={plan.main} timers={timers} activeKey={activeKey} disabled={isCompleted}
+          onToggle={toggle} onReset={reset} onDone={markDone} />
+        <Section sectionKey="cool" icon={<Snowflake className="h-5 w-5 text-accent" />} title="Cool-down" tone="amber"
+          items={plan.cooldown} timers={timers} activeKey={activeKey} disabled={isCompleted}
+          onToggle={toggle} onReset={reset} onDone={markDone} />
 
         <div className="mt-8 text-center">
           <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">← Back to dashboard</Link>
@@ -139,7 +160,21 @@ function WorkoutDetail() {
   );
 }
 
-function Section({ icon, title, tone, items }: { icon: React.ReactNode; title: string; tone: "primary" | "amber"; items: Exercise[] }) {
+type SectionProps = {
+  sectionKey: string;
+  icon: React.ReactNode;
+  title: string;
+  tone: "primary" | "amber";
+  items: Exercise[];
+  timers: TimerMap;
+  activeKey: string | null;
+  disabled: boolean;
+  onToggle: (k: string) => void;
+  onReset: (k: string) => void;
+  onDone: (k: string) => void;
+};
+
+function Section({ sectionKey, icon, title, tone, items, timers, activeKey, disabled, onToggle, onReset, onDone }: SectionProps) {
   const accent = tone === "primary" ? "border-primary/30" : "border-accent/30";
   return (
     <div className={`mb-4 rounded-2xl border ${accent} bg-card p-5`}>
@@ -148,20 +183,55 @@ function Section({ icon, title, tone, items }: { icon: React.ReactNode; title: s
         <h2 className="font-display text-lg font-bold">{title}</h2>
       </div>
       <ul className="space-y-2">
-        {items.map((ex, i) => (
-          <li key={i} className="flex items-center justify-between gap-3 rounded-lg bg-secondary/40 px-4 py-3">
-            <div>
-              <div className="font-semibold">{ex.name}</div>
-              {ex.notes && <div className="text-xs text-muted-foreground">{ex.notes}</div>}
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
-              {ex.sets && <Badge>{ex.sets} sets</Badge>}
-              {ex.reps && <Badge>{ex.reps} reps</Badge>}
-              {ex.duration && <Badge>{ex.duration}</Badge>}
-              {ex.rest && <Badge tone="muted">rest {ex.rest}</Badge>}
-            </div>
-          </li>
-        ))}
+        {items.map((ex, i) => {
+          const key = `${sectionKey}-${i}`;
+          const t = timers[key] ?? { elapsed: 0, done: false };
+          const isActive = activeKey === key;
+          return (
+            <li key={key} className={`rounded-lg border bg-secondary/40 px-4 py-3 transition ${isActive ? "border-primary/60 bg-primary/10" : "border-transparent"} ${t.done ? "opacity-60" : ""}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className={`font-semibold ${t.done ? "line-through" : ""}`}>{ex.name}</div>
+                  {ex.notes && <div className="text-xs text-muted-foreground">{ex.notes}</div>}
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+                  {ex.sets && <Badge>{ex.sets} sets</Badge>}
+                  {ex.reps && <Badge>{ex.reps} reps</Badge>}
+                  {ex.duration && <Badge>{ex.duration}</Badge>}
+                  {ex.rest && <Badge tone="muted">rest {ex.rest}</Badge>}
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="font-display text-2xl font-bold tabular-nums text-foreground">{fmt(t.elapsed)}</div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onToggle(key)}
+                    disabled={disabled || t.done}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold transition hover:bg-secondary/70 disabled:opacity-50"
+                  >
+                    {isActive ? <><Pause className="h-3.5 w-3.5" /> Pause</> : <><Play className="h-3.5 w-3.5" /> {t.elapsed > 0 ? "Resume" : "Start"}</>}
+                  </button>
+                  <button
+                    onClick={() => onReset(key)}
+                    disabled={disabled || (t.elapsed === 0 && !t.done)}
+                    title="Reset"
+                    className="inline-flex items-center rounded-lg bg-background p-1.5 text-muted-foreground transition hover:text-foreground disabled:opacity-40"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onDone(key)}
+                    disabled={disabled}
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${t.done ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground hover:opacity-90"}`}
+                  >
+                    <Check className="h-3.5 w-3.5" /> {t.done ? "Done" : "Mark"}
+                  </button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
