@@ -20,6 +20,8 @@ const FIELDS = [
   { key: "main_goal", label: "Goal", options: ["Strength", "Endurance", "Muscle Mass", "Fat Loss"] },
 ] as const;
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 type HistoryItem = {
   id: string;
   workout_date: string;
@@ -33,6 +35,7 @@ function Profile() {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [daysDraft, setDaysDraft] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
@@ -60,12 +63,18 @@ function Profile() {
         equipment: profile.equipment ?? "",
         main_goal: profile.main_goal ?? "",
       });
+      setDaysDraft(((profile as { training_days?: string[] | null }).training_days) ?? []);
     }
   }, [profile, editing]);
 
+  const toggleDay = (d: string) => {
+    setDaysDraft((cur) => cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]);
+  };
+
   const save = async () => {
     if (!user) return;
-    const { error } = await supabase.from("profiles").update(draft as never).eq("id", user.id);
+    const payload = { ...draft, training_days: daysDraft } as never;
+    const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
     if (error) { toast.error(error.message); return; }
     await refreshProfile();
     setEditing(false);
@@ -78,7 +87,7 @@ function Profile() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
+      <div className="w-full">
         {/* Hero */}
         <div className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-br from-card to-secondary/40 p-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl font-bold text-primary-foreground glow-primary">
@@ -138,7 +147,38 @@ function Profile() {
               </div>
             ))}
           </div>
+
+          {/* Training days */}
+          <div className="mt-6">
+            <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Training days</div>
+            <div className="flex flex-wrap gap-2">
+              {DAYS.map((d) => {
+                const active = editing
+                  ? daysDraft.includes(d)
+                  : (((profile as { training_days?: string[] | null }).training_days) ?? []).includes(d);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    disabled={!editing}
+                    onClick={() => editing && toggleDay(d)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary/40 text-muted-foreground"
+                    } ${editing ? "cursor-pointer hover:opacity-90" : "cursor-default"}`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+            {editing && (
+              <p className="mt-2 text-xs text-muted-foreground">Tap a day to toggle it on or off.</p>
+            )}
+          </div>
         </div>
+
 
         {/* History */}
         <div className="rounded-2xl border border-border bg-card p-6">

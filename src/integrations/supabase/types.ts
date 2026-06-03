@@ -25,6 +25,7 @@ export type Database = {
           main_goal: string | null
           onboarded: boolean
           sport_type: string | null
+          training_days: string[]
           updated_at: string
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           main_goal?: string | null
           onboarded?: boolean
           sport_type?: string | null
+          training_days?: string[]
           updated_at?: string
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           main_goal?: string | null
           onboarded?: boolean
           sport_type?: string | null
+          training_days?: string[]
           updated_at?: string
         }
         Relationships: []
