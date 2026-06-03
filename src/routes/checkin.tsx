@@ -1,10 +1,10 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Battery, Activity, Clock, Sparkles, Loader2 } from "lucide-react";
+import { Battery, Activity, Clock, Sparkles, Loader2, Coffee } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { generateWorkout } from "@/lib/generate-workout";
+import { generateWorkout, getDaySchedule } from "@/lib/generate-workout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -75,15 +75,46 @@ function CheckIn() {
 
   if (!user) return null;
 
+  const today = new Date();
+  const schedule = getDaySchedule(today);
+
+  if (schedule.kind === "rest") {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="rounded-2xl border border-border bg-card p-10">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+              <Coffee className="h-6 w-6 text-[color:var(--green-dark)]" />
+            </div>
+            <div className="mb-2 inline-flex rounded-full bg-[color:var(--green-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[color:var(--green-dark)]">
+              {schedule.label}
+            </div>
+            <h1 className="font-display text-3xl font-bold">No training today</h1>
+            <p className="mt-2 text-muted-foreground">
+              Your split runs <b>Mon · Wed · Fri</b>. Recover well — eat, hydrate, sleep.
+              Your next session is coming up.
+            </p>
+            <Link
+              to="/dashboard"
+              className="btn-pill mt-6 inline-flex bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+            >
+              Back to dashboard
+            </Link>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 text-center">
-          <div className="mb-2 inline-flex rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-            Daily Readiness · 30s
+          <div className="mb-2 inline-flex rounded-full bg-[color:var(--green-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[color:var(--green-dark)]">
+            Today · {schedule.label}
           </div>
           <h1 className="font-display text-3xl font-bold">How are you feeling?</h1>
-          <p className="mt-1 text-muted-foreground">Tune today's workout to your body.</p>
+          <p className="mt-1 text-muted-foreground">Tune today's {schedule.label.toLowerCase()} session to your body.</p>
         </div>
 
         <div className="space-y-5">
