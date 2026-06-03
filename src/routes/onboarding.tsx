@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Dumbbell, Trophy, Wrench, Target, ChevronRight, Loader2 } from "lucide-react";
+import { Dumbbell, Trophy, Wrench, Target, ChevronRight, Loader2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -22,6 +22,12 @@ const STEPS = [
     title: "Your experience",
     icon: Trophy,
     options: ["Beginner", "Intermediate", "Pro"],
+  },
+  {
+    key: "body_type" as const,
+    title: "Your body type",
+    icon: User,
+    options: ["Slim", "Average", "Athletic", "Heavy / Overweight"],
   },
   {
     key: "equipment" as const,
