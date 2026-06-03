@@ -87,7 +87,7 @@ function Profile() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
+      <div className="w-full">
         {/* Hero */}
         <div className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-gradient-to-br from-card to-secondary/40 p-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-2xl font-bold text-primary-foreground glow-primary">
