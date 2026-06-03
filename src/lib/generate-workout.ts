@@ -34,6 +34,7 @@ type Inputs = {
   experience: string | null;
   equipment: string | null;
   goal: string | null;
+  bodyType?: string | null;
   energy: number;
   soreness: number;
   minutes: number;
@@ -191,6 +192,31 @@ const WARMUP: Exercise[] = [
   { name: "Light Cardio Ramp-Up", duration: "3 min", target_seconds: 180 },
 ];
 
+// Extra warm-up for heavier builds: a bit more low-impact cardio to wake up the heart.
+const HEAVY_WARMUP_EXTRA: Exercise[] = [
+  { name: "Brisk Walk / Easy Bike", duration: "5 min", rest: "0s", target_seconds: 300, notes: "Low-impact warm-up — joints first." },
+];
+
+// Cardio finishers — used for Heavy body type and Fat Loss goal.
+const CARDIO_FINISHERS: Record<EquipTier, Exercise[]> = {
+  "Full Gym": [
+    { name: "Incline Treadmill Walk", duration: "10 min", rest: "0s", target_seconds: 600, notes: "Steady pace, ~120-140 bpm." },
+    { name: "Stationary Bike Intervals", sets: 6, duration: "40s on / 60s easy", rest: "60s", target_seconds: 600, notes: "Hard but sustainable." },
+    { name: "Rower — Steady", duration: "8 min", rest: "0s", target_seconds: 480, notes: "Long pulls, controlled breathing." },
+  ],
+  Home: [
+    { name: "Marching in Place", duration: "5 min", rest: "0s", target_seconds: 300, notes: "Pump knees, swing arms." },
+    { name: "Step-Ups (low bench)", sets: 4, reps: "20/side", rest: "45s", target_seconds: 480 },
+    { name: "Shadow Boxing", sets: 4, duration: "60s", rest: "30s", target_seconds: 360 },
+  ],
+  None: [
+    { name: "Marching in Place", duration: "5 min", rest: "0s", target_seconds: 300 },
+    { name: "Modified Jumping Jacks (step-out)", sets: 4, duration: "45s", rest: "30s", target_seconds: 300 },
+    { name: "Shadow Boxing", sets: 4, duration: "60s", rest: "30s", target_seconds: 360 },
+    { name: "Wall Push-up Burst", sets: 3, reps: "15", rest: "30s", target_seconds: 225 },
+  ],
+};
+
 const COOLDOWN: Exercise[] = [
   { name: "Target Muscle Static Stretch", duration: "60s/side", target_seconds: 120 },
   { name: "Thoracic Twist", duration: "60s", target_seconds: 60 },
@@ -203,24 +229,35 @@ function mapEquipment(equipment: string | null): EquipTier {
   return "Home"; // Home/Dumbbells or anything else
 }
 
+type BodyTier = "slim" | "average" | "athletic" | "heavy";
+function mapBodyType(b: string | null | undefined): BodyTier {
+  const s = (b ?? "").toLowerCase();
+  if (s.startsWith("heavy") || s.includes("overweight")) return "heavy";
+  if (s.startsWith("slim") || s.startsWith("thin")) return "slim";
+  if (s.startsWith("athletic")) return "athletic";
+  return "average";
+}
+
 export function generateWorkout(inputs: Inputs): WorkoutPlan {
   const day = inputs.dayOfWeek ?? new Date().getDay();
   const schedule = WEEK_SCHEDULE[day];
   const tier = mapEquipment(inputs.equipment);
+  const body = mapBodyType(inputs.bodyType);
 
-  // Determine target groups; on rest days fall back to a light full-body recovery feel.
   const groups =
     schedule.kind === "training"
       ? schedule.groups
-      : ["Chest", "Back"]; // gentle default if generated on a rest day
+      : ["Chest", "Back"];
 
   const lowEnergy = inputs.energy <= 4 || inputs.soreness >= 7;
   const highEnergy = inputs.energy >= 8 && inputs.soreness <= 4;
 
-  // Aim for ~12 min per exercise — split evenly between the two groups.
+  // Heavy build: reserve time for a cardio finisher.
+  const cardioBudget = body === "heavy" ? 12 : inputs.goal === "Fat Loss" ? 8 : 0;
+  const strengthMinutes = Math.max(8, inputs.minutes - cardioBudget);
   const totalCount = Math.max(
-    4,
-    Math.round(inputs.minutes / 12) + (highEnergy ? 1 : 0) - (lowEnergy ? 1 : 0),
+    body === "heavy" ? 3 : 4,
+    Math.round(strengthMinutes / 12) + (highEnergy ? 1 : 0) - (lowEnergy ? 1 : 0),
   );
   const perGroup = Math.max(2, Math.ceil(totalCount / groups.length));
 
@@ -229,13 +266,31 @@ export function generateWorkout(inputs: Inputs): WorkoutPlan {
     const pool = EXERCISES[g]?.[tier] ?? [];
     const picks = [...pool].sort(() => Math.random() - 0.5).slice(0, perGroup);
     for (const ex of picks) {
+      let sets = ex.sets;
+      if (sets) {
+        sets = Math.max(2, sets + (highEnergy ? 0 : lowEnergy ? -1 : 0));
+        if (body === "heavy") sets = Math.max(2, sets - 1);
+      }
+      const reps = body === "heavy" && ex.reps && /\d/.test(ex.reps)
+        ? ex.reps.replace(/(\d+)\s*-\s*(\d+)/, (_, a, b) => `${+a + 2}-${+b + 4}`)
+        : ex.reps;
       main.push({
         ...ex,
+        sets,
+        reps,
         notes: ex.notes ?? g,
-        sets: ex.sets ? Math.max(2, ex.sets + (highEnergy ? 0 : lowEnergy ? -1 : 0)) : ex.sets,
       });
     }
   }
+
+  // Cardio finisher: heavy body type or Fat Loss goal.
+  if (body === "heavy" || inputs.goal === "Fat Loss") {
+    const pool = CARDIO_FINISHERS[tier];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick) main.push({ ...pick, notes: pick.notes ?? "Cardio finisher — keep it conversational." });
+  }
+
+  const warmup = body === "heavy" ? [...WARMUP, ...HEAVY_WARMUP_EXTRA] : WARMUP;
 
   const difficulty = lowEnergy ? "Recovery" : highEnergy ? "Hard" : "Moderate";
 
@@ -250,16 +305,25 @@ export function generateWorkout(inputs: Inputs): WorkoutPlan {
             ? "Trim rest where you can — keep heart rate elevated."
             : "Move with intent. Quality over quantity.";
 
+  const bodyLine =
+    body === "heavy"
+      ? " Built for a heavier frame: lighter loads, higher reps, longer warm-up, and a cardio finisher to burn fat without trashing your joints."
+      : body === "slim"
+        ? " Slim build: prioritising volume + pump rep ranges for mass."
+        : body === "athletic"
+          ? " Athletic build: keeping intensity high — you can handle it."
+          : "";
+
   return {
     title: `${groups.join(" + ")} · ${difficulty}`,
     focus: groups.join(" + "),
     estimated_minutes: inputs.minutes,
     difficulty,
     muscle_groups: groups,
-    warmup: WARMUP,
+    warmup,
     main,
     cooldown: COOLDOWN,
-    ai_note: `${schedule.label} session. Energy ${inputs.energy}/10, soreness ${inputs.soreness}/10 — ${goalLine}`,
+    ai_note: `${schedule.label} session. Energy ${inputs.energy}/10, soreness ${inputs.soreness}/10 — ${goalLine}${bodyLine}`,
   };
 }
 

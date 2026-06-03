@@ -15,6 +15,7 @@ export const Route = createFileRoute("/profile")({
 const FIELDS = [
   { key: "sport_type", label: "Sport", options: ["Gym", "Football", "MMA", "Running", "Bodyweight"] },
   { key: "experience_level", label: "Experience", options: ["Beginner", "Intermediate", "Pro"] },
+  { key: "body_type", label: "Body type", options: ["Slim", "Average", "Athletic", "Heavy / Overweight"] },
   { key: "equipment", label: "Equipment", options: ["Full Gym", "Home/Dumbbells", "No Equipment"] },
   { key: "main_goal", label: "Goal", options: ["Strength", "Endurance", "Muscle Mass", "Fat Loss"] },
 ] as const;
@@ -55,6 +56,7 @@ function Profile() {
       setDraft({
         sport_type: profile.sport_type ?? "",
         experience_level: profile.experience_level ?? "",
+        body_type: (profile as { body_type?: string | null }).body_type ?? "",
         equipment: profile.equipment ?? "",
         main_goal: profile.main_goal ?? "",
       });
