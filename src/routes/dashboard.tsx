@@ -92,20 +92,27 @@ function Dashboard() {
             const isSel = format(selected, "yyyy-MM-dd") === key;
             const isFut = isAfter(d, today);
             const done = w?.status === "completed";
+            const sched = WEEK_SCHEDULE[d.getDay()];
+            const isRest = sched.kind === "rest";
             return (
               <button
                 key={key}
                 onClick={() => setSelected(startOfDay(d))}
                 className={`group relative flex flex-col items-center gap-1 rounded-xl border p-3 transition ${
-                  isSel ? "border-primary bg-primary/10 glow-primary" : "border-border bg-secondary/40 hover:border-primary/50"
+                  isSel
+                    ? "border-primary bg-[color:var(--green-soft)]"
+                    : "border-border bg-white hover:border-primary/60"
                 }`}
               >
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{format(d, "EEE")}</span>
-                <span className={`font-display text-xl font-bold ${isToday(d) ? "text-primary" : ""}`}>{format(d, "d")}</span>
+                <span className={`font-display text-xl font-bold ${isToday(d) ? "text-[color:var(--green-dark)]" : ""}`}>{format(d, "d")}</span>
+                <span className={`text-[9px] font-semibold uppercase tracking-wider ${isRest ? "text-muted-foreground" : "text-[color:var(--green-dark)]"}`}>
+                  {isRest ? "Rest" : sched.kind === "training" ? sched.groups.map(g => g[0]).join("·") : ""}
+                </span>
                 <div className="h-2 w-2">
                   {done ? (
-                    <div className="h-2 w-2 rounded-full bg-primary glow-primary" />
-                  ) : isFut ? (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  ) : isFut && !isRest ? (
                     <Lock className="h-2.5 w-2.5 text-muted-foreground" />
                   ) : w ? (
                     <div className="h-2 w-2 rounded-full bg-accent" />
