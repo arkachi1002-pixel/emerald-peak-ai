@@ -61,139 +61,140 @@ export function getDaySchedule(date: Date = new Date()): DaySchedule {
 }
 
 // Exercises grouped by muscle and equipment tier.
+// target_seconds = estimated total time including work + rest between sets.
 type EquipTier = "Full Gym" | "Home" | "None";
 const EXERCISES: Record<string, Record<EquipTier, Exercise[]>> = {
   Chest: {
     "Full Gym": [
-      { name: "Barbell Bench Press", sets: 4, reps: "6-8", rest: "90s" },
-      { name: "Incline Dumbbell Press", sets: 4, reps: "8-10", rest: "75s" },
-      { name: "Cable Chest Fly", sets: 3, reps: "12", rest: "60s" },
-      { name: "Machine Chest Press", sets: 3, reps: "10-12", rest: "60s" },
+      { name: "Barbell Bench Press", sets: 4, reps: "6-8", rest: "90s", target_seconds: 540 },
+      { name: "Incline Dumbbell Press", sets: 4, reps: "8-10", rest: "75s", target_seconds: 480 },
+      { name: "Cable Chest Fly", sets: 3, reps: "12", rest: "60s", target_seconds: 315 },
+      { name: "Machine Chest Press", sets: 3, reps: "10-12", rest: "60s", target_seconds: 315 },
     ],
     Home: [
-      { name: "Dumbbell Bench Press (floor)", sets: 4, reps: "8-10", rest: "75s" },
-      { name: "Dumbbell Fly", sets: 3, reps: "12", rest: "60s" },
-      { name: "Push-ups", sets: 4, reps: "AMRAP", rest: "60s" },
-      { name: "Incline Push-ups", sets: 3, reps: "12-15", rest: "45s" },
+      { name: "Dumbbell Bench Press (floor)", sets: 4, reps: "8-10", rest: "75s", target_seconds: 480 },
+      { name: "Dumbbell Fly", sets: 3, reps: "12", rest: "60s", target_seconds: 315 },
+      { name: "Push-ups", sets: 4, reps: "AMRAP", rest: "60s", target_seconds: 480 },
+      { name: "Incline Push-ups", sets: 3, reps: "12-15", rest: "45s", target_seconds: 285 },
     ],
     None: [
-      { name: "Push-ups", sets: 4, reps: "12-15", rest: "60s" },
-      { name: "Diamond Push-ups", sets: 3, reps: "8-12", rest: "60s" },
-      { name: "Decline Push-ups", sets: 3, reps: "10-12", rest: "60s" },
-      { name: "Archer Push-ups", sets: 3, reps: "6/side", rest: "60s" },
+      { name: "Push-ups", sets: 4, reps: "12-15", rest: "60s", target_seconds: 480 },
+      { name: "Diamond Push-ups", sets: 3, reps: "8-12", rest: "60s", target_seconds: 360 },
+      { name: "Decline Push-ups", sets: 3, reps: "10-12", rest: "60s", target_seconds: 360 },
+      { name: "Archer Push-ups", sets: 3, reps: "6/side", rest: "60s", target_seconds: 360 },
     ],
   },
   Biceps: {
     "Full Gym": [
-      { name: "Barbell Curl", sets: 4, reps: "8-10", rest: "60s" },
-      { name: "Incline Dumbbell Curl", sets: 3, reps: "10-12", rest: "60s" },
-      { name: "Hammer Curl", sets: 3, reps: "10/side", rest: "45s" },
-      { name: "Cable Curl", sets: 3, reps: "12", rest: "45s" },
+      { name: "Barbell Curl", sets: 4, reps: "8-10", rest: "60s", target_seconds: 420 },
+      { name: "Incline Dumbbell Curl", sets: 3, reps: "10-12", rest: "60s", target_seconds: 315 },
+      { name: "Hammer Curl", sets: 3, reps: "10/side", rest: "45s", target_seconds: 285 },
+      { name: "Cable Curl", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
     ],
     Home: [
-      { name: "Dumbbell Curl", sets: 4, reps: "10-12", rest: "60s" },
-      { name: "Hammer Curl", sets: 3, reps: "10/side", rest: "45s" },
-      { name: "Concentration Curl", sets: 3, reps: "12/side", rest: "45s" },
+      { name: "Dumbbell Curl", sets: 4, reps: "10-12", rest: "60s", target_seconds: 420 },
+      { name: "Hammer Curl", sets: 3, reps: "10/side", rest: "45s", target_seconds: 285 },
+      { name: "Concentration Curl", sets: 3, reps: "12/side", rest: "45s", target_seconds: 315 },
     ],
     None: [
-      { name: "Chin-ups (or assisted)", sets: 4, reps: "AMRAP", rest: "75s" },
-      { name: "Towel Door Curl", sets: 3, reps: "12", rest: "45s" },
-      { name: "Isometric Curl Hold", sets: 3, duration: "30s", rest: "45s" },
+      { name: "Chin-ups (or assisted)", sets: 4, reps: "AMRAP", rest: "75s", target_seconds: 540 },
+      { name: "Towel Door Curl", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
+      { name: "Isometric Curl Hold", sets: 3, duration: "30s", rest: "45s", target_seconds: 225 },
     ],
   },
   Triceps: {
     "Full Gym": [
-      { name: "Close-Grip Bench Press", sets: 4, reps: "6-8", rest: "90s" },
-      { name: "Cable Tricep Pushdown", sets: 4, reps: "10-12", rest: "60s" },
-      { name: "Overhead Cable Extension", sets: 3, reps: "12", rest: "60s" },
-      { name: "Dips", sets: 3, reps: "AMRAP", rest: "60s" },
+      { name: "Close-Grip Bench Press", sets: 4, reps: "6-8", rest: "90s", target_seconds: 540 },
+      { name: "Cable Tricep Pushdown", sets: 4, reps: "10-12", rest: "60s", target_seconds: 420 },
+      { name: "Overhead Cable Extension", sets: 3, reps: "12", rest: "60s", target_seconds: 315 },
+      { name: "Dips", sets: 3, reps: "AMRAP", rest: "60s", target_seconds: 360 },
     ],
     Home: [
-      { name: "Dumbbell Skullcrusher", sets: 4, reps: "10", rest: "60s" },
-      { name: "Overhead Dumbbell Extension", sets: 3, reps: "12", rest: "60s" },
-      { name: "Bench Dips", sets: 3, reps: "12-15", rest: "45s" },
-      { name: "Close-Grip Push-ups", sets: 3, reps: "10-12", rest: "60s" },
+      { name: "Dumbbell Skullcrusher", sets: 4, reps: "10", rest: "60s", target_seconds: 420 },
+      { name: "Overhead Dumbbell Extension", sets: 3, reps: "12", rest: "60s", target_seconds: 315 },
+      { name: "Bench Dips", sets: 3, reps: "12-15", rest: "45s", target_seconds: 285 },
+      { name: "Close-Grip Push-ups", sets: 3, reps: "10-12", rest: "60s", target_seconds: 360 },
     ],
     None: [
-      { name: "Diamond Push-ups", sets: 4, reps: "10-12", rest: "60s" },
-      { name: "Bench / Chair Dips", sets: 4, reps: "12-15", rest: "45s" },
-      { name: "Pike Push-ups", sets: 3, reps: "10", rest: "60s" },
+      { name: "Diamond Push-ups", sets: 4, reps: "10-12", rest: "60s", target_seconds: 480 },
+      { name: "Bench / Chair Dips", sets: 4, reps: "12-15", rest: "45s", target_seconds: 380 },
+      { name: "Pike Push-ups", sets: 3, reps: "10", rest: "60s", target_seconds: 360 },
     ],
   },
   Back: {
     "Full Gym": [
-      { name: "Deadlift", sets: 3, reps: "5", rest: "120s" },
-      { name: "Pull-ups", sets: 4, reps: "AMRAP", rest: "90s" },
-      { name: "Bent-over Barbell Row", sets: 4, reps: "8-10", rest: "75s" },
-      { name: "Lat Pulldown", sets: 3, reps: "10-12", rest: "60s" },
-      { name: "Seated Cable Row", sets: 3, reps: "12", rest: "60s" },
+      { name: "Deadlift", sets: 3, reps: "5", rest: "120s", target_seconds: 495 },
+      { name: "Pull-ups", sets: 4, reps: "AMRAP", rest: "90s", target_seconds: 540 },
+      { name: "Bent-over Barbell Row", sets: 4, reps: "8-10", rest: "75s", target_seconds: 480 },
+      { name: "Lat Pulldown", sets: 3, reps: "10-12", rest: "60s", target_seconds: 315 },
+      { name: "Seated Cable Row", sets: 3, reps: "12", rest: "60s", target_seconds: 315 },
     ],
     Home: [
-      { name: "Dumbbell Row", sets: 4, reps: "10/side", rest: "60s" },
-      { name: "Romanian Deadlift (DB)", sets: 3, reps: "10", rest: "75s" },
-      { name: "Reverse Fly", sets: 3, reps: "12", rest: "45s" },
-      { name: "Renegade Row", sets: 3, reps: "8/side", rest: "60s" },
+      { name: "Dumbbell Row", sets: 4, reps: "10/side", rest: "60s", target_seconds: 420 },
+      { name: "Romanian Deadlift (DB)", sets: 3, reps: "10", rest: "75s", target_seconds: 360 },
+      { name: "Reverse Fly", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
+      { name: "Renegade Row", sets: 3, reps: "8/side", rest: "60s", target_seconds: 360 },
     ],
     None: [
-      { name: "Pull-ups", sets: 4, reps: "AMRAP", rest: "75s" },
-      { name: "Inverted Rows (under table)", sets: 4, reps: "10-12", rest: "60s" },
-      { name: "Superman Hold", sets: 3, duration: "30s", rest: "30s" },
-      { name: "Reverse Snow Angels", sets: 3, reps: "15", rest: "30s" },
+      { name: "Pull-ups", sets: 4, reps: "AMRAP", rest: "75s", target_seconds: 480 },
+      { name: "Inverted Rows (under table)", sets: 4, reps: "10-12", rest: "60s", target_seconds: 480 },
+      { name: "Superman Hold", sets: 3, duration: "30s", rest: "30s", target_seconds: 180 },
+      { name: "Reverse Snow Angels", sets: 3, reps: "15", rest: "30s", target_seconds: 225 },
     ],
   },
   Shoulders: {
     "Full Gym": [
-      { name: "Overhead Barbell Press", sets: 4, reps: "6-8", rest: "90s" },
-      { name: "Dumbbell Lateral Raise", sets: 4, reps: "12-15", rest: "45s" },
-      { name: "Cable Rear Delt Fly", sets: 3, reps: "12", rest: "45s" },
-      { name: "Arnold Press", sets: 3, reps: "10", rest: "60s" },
+      { name: "Overhead Barbell Press", sets: 4, reps: "6-8", rest: "90s", target_seconds: 540 },
+      { name: "Dumbbell Lateral Raise", sets: 4, reps: "12-15", rest: "45s", target_seconds: 360 },
+      { name: "Cable Rear Delt Fly", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
+      { name: "Arnold Press", sets: 3, reps: "10", rest: "60s", target_seconds: 315 },
     ],
     Home: [
-      { name: "Dumbbell Shoulder Press", sets: 4, reps: "8-10", rest: "75s" },
-      { name: "Lateral Raise", sets: 4, reps: "12-15", rest: "45s" },
-      { name: "Front Raise", sets: 3, reps: "12", rest: "45s" },
-      { name: "Bent-over Rear Delt Fly", sets: 3, reps: "12", rest: "45s" },
+      { name: "Dumbbell Shoulder Press", sets: 4, reps: "8-10", rest: "75s", target_seconds: 480 },
+      { name: "Lateral Raise", sets: 4, reps: "12-15", rest: "45s", target_seconds: 360 },
+      { name: "Front Raise", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
+      { name: "Bent-over Rear Delt Fly", sets: 3, reps: "12", rest: "45s", target_seconds: 285 },
     ],
     None: [
-      { name: "Pike Push-ups", sets: 4, reps: "8-10", rest: "60s" },
-      { name: "Wall Handstand Hold", sets: 3, duration: "30s", rest: "60s" },
-      { name: "Plank Shoulder Taps", sets: 3, reps: "20", rest: "45s" },
+      { name: "Pike Push-ups", sets: 4, reps: "8-10", rest: "60s", target_seconds: 420 },
+      { name: "Wall Handstand Hold", sets: 3, duration: "30s", rest: "60s", target_seconds: 270 },
+      { name: "Plank Shoulder Taps", sets: 3, reps: "20", rest: "45s", target_seconds: 270 },
     ],
   },
   Legs: {
     "Full Gym": [
-      { name: "Barbell Back Squat", sets: 4, reps: "6-8", rest: "120s" },
-      { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest: "90s" },
-      { name: "Leg Press", sets: 3, reps: "10-12", rest: "75s" },
-      { name: "Walking Lunges", sets: 3, reps: "10/side", rest: "60s" },
-      { name: "Standing Calf Raise", sets: 4, reps: "15", rest: "45s" },
+      { name: "Barbell Back Squat", sets: 4, reps: "6-8", rest: "120s", target_seconds: 600 },
+      { name: "Romanian Deadlift", sets: 4, reps: "8-10", rest: "90s", target_seconds: 540 },
+      { name: "Leg Press", sets: 3, reps: "10-12", rest: "75s", target_seconds: 360 },
+      { name: "Walking Lunges", sets: 3, reps: "10/side", rest: "60s", target_seconds: 360 },
+      { name: "Standing Calf Raise", sets: 4, reps: "15", rest: "45s", target_seconds: 360 },
     ],
     Home: [
-      { name: "Goblet Squat", sets: 4, reps: "10-12", rest: "75s" },
-      { name: "Dumbbell RDL", sets: 4, reps: "10", rest: "75s" },
-      { name: "Bulgarian Split Squat", sets: 3, reps: "10/side", rest: "60s" },
-      { name: "Calf Raise", sets: 3, reps: "15", rest: "30s" },
+      { name: "Goblet Squat", sets: 4, reps: "10-12", rest: "75s", target_seconds: 480 },
+      { name: "Dumbbell RDL", sets: 4, reps: "10", rest: "75s", target_seconds: 480 },
+      { name: "Bulgarian Split Squat", sets: 3, reps: "10/side", rest: "60s", target_seconds: 390 },
+      { name: "Calf Raise", sets: 3, reps: "15", rest: "30s", target_seconds: 225 },
     ],
     None: [
-      { name: "Bodyweight Squat", sets: 4, reps: "20", rest: "60s" },
-      { name: "Reverse Lunge", sets: 3, reps: "12/side", rest: "60s" },
-      { name: "Pistol Squat (assisted)", sets: 3, reps: "6/side", rest: "60s" },
-      { name: "Glute Bridge", sets: 3, reps: "15", rest: "45s" },
-      { name: "Calf Raise", sets: 3, reps: "20", rest: "30s" },
+      { name: "Bodyweight Squat", sets: 4, reps: "20", rest: "60s", target_seconds: 480 },
+      { name: "Reverse Lunge", sets: 3, reps: "12/side", rest: "60s", target_seconds: 390 },
+      { name: "Pistol Squat (assisted)", sets: 3, reps: "6/side", rest: "60s", target_seconds: 360 },
+      { name: "Glute Bridge", sets: 3, reps: "15", rest: "45s", target_seconds: 285 },
+      { name: "Calf Raise", sets: 3, reps: "20", rest: "30s", target_seconds: 225 },
     ],
   },
 };
 
 const WARMUP: Exercise[] = [
-  { name: "Dynamic Mobility Flow", duration: "3 min" },
-  { name: "Leg Swings + Arm Circles", duration: "2 min" },
-  { name: "Light Cardio Ramp-Up", duration: "3 min" },
+  { name: "Dynamic Mobility Flow", duration: "3 min", target_seconds: 180 },
+  { name: "Leg Swings + Arm Circles", duration: "2 min", target_seconds: 120 },
+  { name: "Light Cardio Ramp-Up", duration: "3 min", target_seconds: 180 },
 ];
 
 const COOLDOWN: Exercise[] = [
-  { name: "Target Muscle Static Stretch", duration: "60s/side" },
-  { name: "Thoracic Twist", duration: "60s" },
-  { name: "Deep Breathing", duration: "2 min" },
+  { name: "Target Muscle Static Stretch", duration: "60s/side", target_seconds: 120 },
+  { name: "Thoracic Twist", duration: "60s", target_seconds: 60 },
+  { name: "Deep Breathing", duration: "2 min", target_seconds: 120 },
 ];
 
 function mapEquipment(equipment: string | null): EquipTier {
@@ -260,4 +261,15 @@ export function generateWorkout(inputs: Inputs): WorkoutPlan {
     cooldown: COOLDOWN,
     ai_note: `${schedule.label} session. Energy ${inputs.energy}/10, soreness ${inputs.soreness}/10 — ${goalLine}`,
   };
+}
+
+/** Format seconds into a human-readable string like "3 min", "1.5 min", "45 sec". */
+export function fmtTarget(sec: number): string {
+  if (sec < 60) return `${sec} sec`;
+  if (sec === 60) return "1 min";
+  if (sec % 60 === 0) return `${sec / 60} min`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (s === 30) return `${m}.5 min`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
