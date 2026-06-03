@@ -56,6 +56,7 @@ function Profile() {
       setDraft({
         sport_type: profile.sport_type ?? "",
         experience_level: profile.experience_level ?? "",
+        body_type: (profile as { body_type?: string | null }).body_type ?? "",
         equipment: profile.equipment ?? "",
         main_goal: profile.main_goal ?? "",
       });
