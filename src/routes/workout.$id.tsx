@@ -128,14 +128,23 @@ function WorkoutDetail() {
           </div>
           <div className="mb-4 font-display text-5xl font-bold tabular-nums text-gradient">{fmt(totalElapsed)}</div>
           {!isCompleted ? (
-            <button
-              onClick={complete}
-              disabled={completing}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 glow-primary"
-            >
-              {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Finish Workout
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                to="/workout/$id/session"
+                params={{ id }}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+              >
+                <Play className="h-4 w-4" /> Start guided session
+              </Link>
+              <button
+                onClick={complete}
+                disabled={completing}
+                className="inline-flex items-center gap-2 rounded-xl bg-secondary px-6 py-3 font-semibold transition hover:bg-secondary/70 disabled:opacity-50"
+              >
+                {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Finish Workout
+              </button>
+            </div>
           ) : (
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 text-sm font-semibold text-primary">
               <Check className="h-4 w-4" /> Completed
