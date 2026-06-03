@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, startOfDay } from "date-fns";
-import { Check, Lock, Flame, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Lock, Flame, Sparkles, ChevronLeft, ChevronRight, Coffee } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { getDaySchedule, WEEK_SCHEDULE } from "@/lib/generate-workout";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · AI_COACH" }] }),
@@ -91,20 +92,27 @@ function Dashboard() {
             const isSel = format(selected, "yyyy-MM-dd") === key;
             const isFut = isAfter(d, today);
             const done = w?.status === "completed";
+            const sched = WEEK_SCHEDULE[d.getDay()];
+            const isRest = sched.kind === "rest";
             return (
               <button
                 key={key}
                 onClick={() => setSelected(startOfDay(d))}
                 className={`group relative flex flex-col items-center gap-1 rounded-xl border p-3 transition ${
-                  isSel ? "border-primary bg-primary/10 glow-primary" : "border-border bg-secondary/40 hover:border-primary/50"
+                  isSel
+                    ? "border-primary bg-[color:var(--green-soft)]"
+                    : "border-border bg-white hover:border-primary/60"
                 }`}
               >
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{format(d, "EEE")}</span>
-                <span className={`font-display text-xl font-bold ${isToday(d) ? "text-primary" : ""}`}>{format(d, "d")}</span>
+                <span className={`font-display text-xl font-bold ${isToday(d) ? "text-[color:var(--green-dark)]" : ""}`}>{format(d, "d")}</span>
+                <span className={`text-[9px] font-semibold uppercase tracking-wider ${isRest ? "text-muted-foreground" : "text-[color:var(--green-dark)]"}`}>
+                  {isRest ? "Rest" : sched.kind === "training" ? sched.groups.map(g => g[0]).join("·") : ""}
+                </span>
                 <div className="h-2 w-2">
                   {done ? (
-                    <div className="h-2 w-2 rounded-full bg-primary glow-primary" />
-                  ) : isFut ? (
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  ) : isFut && !isRest ? (
                     <Lock className="h-2.5 w-2.5 text-muted-foreground" />
                   ) : w ? (
                     <div className="h-2 w-2 rounded-full bg-accent" />
@@ -119,8 +127,17 @@ function Dashboard() {
       {/* Selected day panel */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <h3 className="font-display text-2xl font-bold">{format(selected, "EEEE, MMM d")}</h3>
-          {isSelectedToday && <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold text-primary">TODAY</span>}
+          <div>
+            <h3 className="font-display text-2xl font-bold">{format(selected, "EEEE, MMM d")}</h3>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">
+              {getDaySchedule(selected).label}
+            </p>
+          </div>
+          {isSelectedToday && (
+            <span className="rounded-full bg-[color:var(--green-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--green-dark)]">
+              TODAY
+            </span>
+          )}
         </div>
 
         {selectedWorkout ? (
@@ -131,8 +148,8 @@ function Dashboard() {
                   <Check className="h-5 w-5" />
                 </div>
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/20">
-                  <Flame className="h-5 w-5 text-accent" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--green-soft)]">
+                  <Flame className="h-5 w-5 text-[color:var(--green-dark)]" />
                 </div>
               )}
               <div>
@@ -145,11 +162,17 @@ function Dashboard() {
             <Link
               to="/workout/$id"
               params={{ id: selectedWorkout.id }}
-              className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/70"
+              className="btn-pill inline-flex bg-secondary text-foreground hover:bg-muted"
             >
               View workout →
             </Link>
           </div>
+        ) : getDaySchedule(selected).kind === "rest" ? (
+          <EmptyState
+            icon={<Coffee className="h-6 w-6 text-[color:var(--green-dark)]" />}
+            title={getDaySchedule(selected).label}
+            desc="Recover, hydrate, sleep. No training scheduled — Mon · Wed · Fri only."
+          />
         ) : isFuture ? (
           <EmptyState
             icon={<Lock className="h-6 w-6 text-muted-foreground" />}
@@ -159,22 +182,24 @@ function Dashboard() {
         ) : isPast ? (
           <EmptyState
             icon={<span className="text-2xl">💤</span>}
-            title="Rest day"
-            desc="No workout was logged for this day."
+            title="Missed session"
+            desc="No workout was logged for this training day."
           />
         ) : (
-          <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-accent/10 p-6">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+          <div className="rounded-xl border border-primary bg-[color:var(--green-soft)] p-6">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[color:var(--green-dark)]">
               <Sparkles className="h-4 w-4" />
               Today's action
             </div>
-            <h4 className="mb-2 font-display text-xl font-bold">Ready to train?</h4>
+            <h4 className="mb-2 font-display text-xl font-bold">
+              Ready to train? {(() => { const s = getDaySchedule(selected); return s.kind === "training" ? s.label : ""; })()}
+            </h4>
             <p className="mb-4 text-sm text-muted-foreground">
-              Complete a 30-second readiness check-in so the AI can dial in today's session.
+              30-second readiness check-in and your AI dials in today's split.
             </p>
             <Link
               to="/checkin"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+              className="btn-pill inline-flex bg-primary text-primary-foreground hover:opacity-90 glow-primary"
             >
               Start daily check-in →
             </Link>
