@@ -13,11 +13,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
+      {/* MongoDB-style promo strip */}
+      <div className="bg-hero-dark text-white text-[13px] font-medium">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4 py-2">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="opacity-90">Train smarter with your AI coach — daily readiness-tuned plans.</span>
+        </div>
+      </div>
+
+      <header className="sticky top-0 z-40 border-b border-border bg-white/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent glow-primary">
-              <Flame className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#001e2b]">
+              <Flame className="h-5 w-5 text-primary" />
             </div>
             <span className="font-display text-lg font-bold tracking-tight">AI_COACH</span>
           </Link>
@@ -26,7 +34,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavBtn to="/profile" icon={<User className="h-4 w-4" />} label="Profile" />
             <button
               onClick={handleSignOut}
-              className="rounded-md p-2 text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              className="btn-pill bg-primary text-primary-foreground hover:opacity-90 ml-1 hidden sm:inline-flex items-center gap-1.5"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign out</span>
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="sm:hidden rounded-full p-2 text-muted-foreground hover:bg-secondary"
               aria-label="Sign out"
             >
               <LogOut className="h-4 w-4" />
@@ -35,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         {profile?.sport_type && (
           <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 pb-2 text-xs text-muted-foreground">
-            <Dumbbell className="h-3 w-3 text-primary" />
+            <Dumbbell className="h-3 w-3 text-[color:var(--green-dark)]" />
             <span>{profile.sport_type} · {profile.experience_level} · Goal: {profile.main_goal}</span>
           </div>
         )}
@@ -49,7 +64,7 @@ function NavBtn({ to, icon, label }: { to: string; icon: React.ReactNode; label:
   return (
     <Link
       to={to}
-      className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground [&.active]:bg-secondary [&.active]:text-foreground"
+      className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground [&.active]:bg-[#001e2b] [&.active]:text-white"
       activeProps={{ className: "active" }}
     >
       {icon}
