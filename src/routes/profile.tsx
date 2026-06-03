@@ -20,6 +20,8 @@ const FIELDS = [
   { key: "main_goal", label: "Goal", options: ["Strength", "Endurance", "Muscle Mass", "Fat Loss"] },
 ] as const;
 
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 type HistoryItem = {
   id: string;
   workout_date: string;
