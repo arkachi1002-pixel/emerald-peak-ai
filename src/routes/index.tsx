@@ -27,28 +27,9 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  const { session, profile, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-    if (session) {
-      router.navigate({ to: profile?.onboarded ? "/dashboard" : "/onboarding" });
-    }
-  }, [session, profile, loading, router]);
-
-  if (loading || session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex h-16 w-16 animate-pulse items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent glow-primary">
-            <Flame className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <p className="text-sm text-muted-foreground">Loading AI_COACH…</p>
-        </div>
-      </div>
-    );
-  }
+  const { session, profile } = useAuth();
+  const isAuthed = !!session;
+  const dashboardTarget = profile?.onboarded ? "/dashboard" : "/onboarding";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -62,18 +43,30 @@ function LandingPage() {
             <span className="font-display text-lg font-bold tracking-tight">AI_COACH</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link
-              to="/auth"
-              className="btn-pill bg-secondary text-foreground hover:bg-muted"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/auth"
-              className="btn-pill bg-primary text-primary-foreground hover:opacity-90 glow-primary"
-            >
-              Get started
-            </Link>
+            {isAuthed ? (
+              <Link
+                to={dashboardTarget}
+                className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+              >
+                Open Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  className="btn-pill bg-secondary text-foreground hover:bg-muted"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/auth"
+                  className="btn-pill bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
