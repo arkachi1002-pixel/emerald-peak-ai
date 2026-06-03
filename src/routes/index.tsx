@@ -91,20 +91,32 @@ function LandingPage() {
               Daily readiness check-ins, adaptive 3-day split workouts, and intelligent progress tracking — all powered by AI.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                to="/auth"
-                className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
-              >
-                Start training free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#features"
-                className="btn-pill inline-flex items-center gap-2 bg-secondary text-foreground hover:bg-muted"
-              >
-                See how it works
-                <ChevronRight className="h-4 w-4" />
-              </a>
+              {isAuthed ? (
+                <Link
+                  to={dashboardTarget}
+                  className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+                >
+                  Open Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/auth"
+                    className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+                  >
+                    Start training free
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <a
+                    href="#features"
+                    className="btn-pill inline-flex items-center gap-2 bg-secondary text-foreground hover:bg-muted"
+                  >
+                    See how it works
+                    <ChevronRight className="h-4 w-4" />
+                  </a>
+                </>
+              )}
             </div>
             <div className="mt-10 flex items-center justify-center gap-6 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -264,19 +276,31 @@ function LandingPage() {
             Join thousands using AI_COACH to train smarter, recover better, and hit their goals faster.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/auth"
-              className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
-            >
-              Create free account
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/auth"
-              className="btn-pill inline-flex items-center gap-2 border border-white/20 text-white hover:bg-white/10"
-            >
-              I already have an account
-            </Link>
+            {isAuthed ? (
+              <Link
+                to={dashboardTarget}
+                className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+              >
+                Open Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/auth"
+                  className="btn-pill inline-flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 glow-primary"
+                >
+                  Create free account
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/auth"
+                  className="btn-pill inline-flex items-center gap-2 border border-white/20 text-white hover:bg-white/10"
+                >
+                  I already have an account
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
