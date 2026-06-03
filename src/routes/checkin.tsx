@@ -42,6 +42,7 @@ function CheckIn() {
       energy,
       soreness,
       minutes,
+      dayOfWeek: new Date().getDay(),
     });
 
     const today = format(new Date(), "yyyy-MM-dd");

@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, startOfWeek, addDays, isToday, isBefore, isAfter, parseISO, startOfDay } from "date-fns";
-import { Check, Lock, Flame, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Lock, Flame, Sparkles, ChevronLeft, ChevronRight, Coffee } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { getDaySchedule, WEEK_SCHEDULE } from "@/lib/generate-workout";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · AI_COACH" }] }),
