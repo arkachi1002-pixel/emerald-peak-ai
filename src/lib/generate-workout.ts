@@ -34,6 +34,7 @@ type Inputs = {
   experience: string | null;
   equipment: string | null;
   goal: string | null;
+  bodyType?: string | null;
   energy: number;
   soreness: number;
   minutes: number;
