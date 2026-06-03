@@ -1,8 +1,8 @@
 import { createFileRoute, useRouter, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Play, Pause, Check, Loader2, ChevronLeft, ChevronRight,
-  RotateCcw, Flame, Snowflake, Dumbbell, Sparkles, X,
+  Play, Pause, Check, Loader2, RotateCcw,
+  Flame, Snowflake, Dumbbell, Sparkles, X, Coffee, ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,17 +16,34 @@ export const Route = createFileRoute("/workout/$id/session")({
 });
 
 type FlatItem = { key: string; section: "warmup" | "main" | "cool"; ex: Exercise };
+type Phase = "ready" | "working" | "rest" | "finished";
 
 function fmt(sec: number) {
-  const m = String(Math.floor(sec / 60)).padStart(2, "0");
-  const s = String(sec % 60).padStart(2, "0");
+  const m = String(Math.floor(Math.max(0, sec) / 60)).padStart(2, "0");
+  const s = String(Math.max(0, sec) % 60).padStart(2, "0");
   return `${m}:${s}`;
 }
 
+// Parse "30s", "45 sec", "1 min", "2 minutes" → seconds. Default 30s.
+function parseRest(rest?: string): number {
+  if (!rest) return 30;
+  const s = rest.toLowerCase();
+  const min = s.match(/(\d+)\s*m/);
+  const sec = s.match(/(\d+)\s*s/);
+  let total = 0;
+  if (min) total += parseInt(min[1], 10) * 60;
+  if (sec) total += parseInt(sec[1], 10);
+  if (!total) {
+    const n = s.match(/(\d+)/);
+    if (n) total = parseInt(n[1], 10);
+  }
+  return total || 30;
+}
+
 const SECTION_META = {
-  warmup: { label: "Warm-up", Icon: Flame, color: "text-accent", bg: "bg-accent/15", border: "border-accent/30" },
-  main:   { label: "Main",    Icon: Dumbbell, color: "text-primary", bg: "bg-primary/15", border: "border-primary/30" },
-  cool:   { label: "Cool-down", Icon: Snowflake, color: "text-accent", bg: "bg-accent/15", border: "border-accent/30" },
+  warmup: { label: "Warm-up", Icon: Flame, color: "text-accent", bg: "bg-accent/15", border: "border-accent/40" },
+  main:   { label: "Main",    Icon: Dumbbell, color: "text-primary", bg: "bg-primary/15", border: "border-primary/40" },
+  cool:   { label: "Cool-down", Icon: Snowflake, color: "text-accent", bg: "bg-accent/15", border: "border-accent/40" },
 } as const;
 
 function SessionPage() {
@@ -36,10 +53,12 @@ function SessionPage() {
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [status, setStatus] = useState<string>("pending");
   const [idx, setIdx] = useState(0);
-  const [elapsedMap, setElapsedMap] = useState<Record<string, number>>({});
-  const [doneMap, setDoneMap] = useState<Record<string, boolean>>({});
+  const [phase, setPhase] = useState<Phase>("ready");
+  const [workElapsed, setWorkElapsed] = useState(0);
+  const [restLeft, setRestLeft] = useState(0);
   const [running, setRunning] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [totals, setTotals] = useState<{ work: number; rest: number }>({ work: 0, rest: 0 });
   const tickRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -71,48 +90,73 @@ function SessionPage() {
   }, [plan]);
 
   const current = items[idx];
-  const currentKey = current?.key;
-  const elapsed = currentKey ? (elapsedMap[currentKey] ?? 0) : 0;
   const target = current?.ex.target_seconds ?? 0;
-  const pct = target > 0 ? Math.min(100, (elapsed / target) * 100) : 0;
-  const totalElapsed = useMemo(
-    () => Object.values(elapsedMap).reduce((s, v) => s + v, 0),
-    [elapsedMap],
-  );
-  const doneCount = useMemo(
-    () => items.filter((it) => doneMap[it.key]).length,
-    [items, doneMap],
-  );
+  const restTotal = useMemo(() => parseRest(current?.ex.rest), [current]);
 
-  // Pause when navigating between exercises
-  useEffect(() => { setRunning(false); }, [idx]);
-
-  // Ticking
+  // Timer tick
   useEffect(() => {
-    if (!running || !currentKey) return;
+    if (!running) return;
     tickRef.current = window.setInterval(() => {
-      setElapsedMap((m) => ({ ...m, [currentKey]: (m[currentKey] ?? 0) + 1 }));
+      if (phase === "working") {
+        setWorkElapsed((s) => s + 1);
+      } else if (phase === "rest") {
+        setRestLeft((s) => {
+          if (s <= 1) {
+            // auto-advance to next exercise
+            return 0;
+          }
+          return s - 1;
+        });
+      }
     }, 1000);
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
-  }, [running, currentKey]);
+  }, [running, phase]);
 
-  const resetCurrent = () => {
-    if (!currentKey) return;
-    setRunning(false);
-    setElapsedMap((m) => ({ ...m, [currentKey]: 0 }));
+  // Auto-transition when rest hits zero
+  useEffect(() => {
+    if (phase === "rest" && restLeft === 0 && running) {
+      setRunning(false);
+      advanceToNext();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restLeft, phase, running]);
+
+  const startExercise = () => {
+    setWorkElapsed(0);
+    setPhase("working");
+    setRunning(true);
   };
 
-  const markDoneAndNext = () => {
-    if (!currentKey) return;
+  const finishExercise = () => {
     setRunning(false);
-    setDoneMap((m) => ({ ...m, [currentKey]: true }));
-    if (idx < items.length - 1) setIdx(idx + 1);
+    setTotals((t) => ({ ...t, work: t.work + workElapsed }));
+    const isLast = idx === items.length - 1;
+    if (isLast) {
+      setPhase("finished");
+      void finishWorkout(totals.work + workElapsed + totals.rest);
+    } else {
+      setRestLeft(restTotal);
+      setPhase("rest");
+      setRunning(true);
+    }
   };
 
-  const goPrev = () => idx > 0 && setIdx(idx - 1);
-  const goNext = () => idx < items.length - 1 && setIdx(idx + 1);
+  const skipRest = () => {
+    setRunning(false);
+    setTotals((t) => ({ ...t, rest: t.rest + (restTotal - restLeft) }));
+    advanceToNext();
+  };
 
-  const finishWorkout = async () => {
+  const advanceToNext = () => {
+    setTotals((t) => ({ ...t, rest: t.rest + restTotal })); // count full rest
+    setIdx((i) => Math.min(i + 1, items.length - 1));
+    setPhase("ready");
+    setWorkElapsed(0);
+    setRestLeft(0);
+    setRunning(false);
+  };
+
+  const finishWorkout = async (finalSeconds: number) => {
     if (!user) return;
     setRunning(false);
     setCompleting(true);
@@ -121,19 +165,19 @@ function SessionPage() {
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
-        duration_seconds: totalElapsed,
+        duration_seconds: finalSeconds,
       })
       .eq("id", id);
     setCompleting(false);
     if (error) { toast.error(error.message); return; }
     setStatus("completed");
     toast.success("💪 Workout completed! Streak +1");
-    setTimeout(() => router.navigate({ to: "/dashboard" }), 800);
+    setTimeout(() => router.navigate({ to: "/dashboard" }), 1200);
   };
 
   if (!plan || !current) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
@@ -141,178 +185,223 @@ function SessionPage() {
 
   const meta = SECTION_META[current.section];
   const Icon = meta.Icon;
-  const isCompleted = status === "completed";
-  const isLast = idx === items.length - 1;
+  const overallPct = (idx / items.length) * 100;
+  const workPct = target > 0 ? Math.min(100, (workElapsed / target) * 100) : 0;
+  const restPct = restTotal > 0 ? ((restTotal - restLeft) / restTotal) * 100 : 0;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/30 to-background">
-      <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-6">
-        {/* Top bar */}
-        <div className="mb-6 flex items-center justify-between gap-3">
+  // ===== FINISHED SCREEN =====
+  if (phase === "finished" || status === "completed") {
+    const total = totals.work + totals.rest;
+    return (
+      <FullScreen>
+        <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 glow-primary">
+            <Check className="h-12 w-12 text-primary" />
+          </div>
+          <h1 className="mb-3 font-display text-5xl font-bold text-gradient">Workout complete!</h1>
+          <p className="mb-8 text-muted-foreground">Great work. Streak +1 🔥</p>
+          <div className="mb-8 grid grid-cols-3 gap-3 text-center">
+            <Stat label="Total" value={fmt(total)} />
+            <Stat label="Work" value={fmt(totals.work)} />
+            <Stat label="Rest" value={fmt(totals.rest)} />
+          </div>
           <Link
-            to="/workout/$id"
-            params={{ id }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+            to="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground glow-primary"
           >
-            <X className="h-3.5 w-3.5" /> Exit
+            Back to dashboard <ArrowRight className="h-4 w-4" />
           </Link>
-          <div className="text-center text-xs uppercase tracking-wider text-muted-foreground">
-            Exercise {idx + 1} / {items.length}
-          </div>
-          <div className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-mono tabular-nums text-muted-foreground">
-            Σ {fmt(totalElapsed)}
-          </div>
+          {completing && <Loader2 className="mt-4 h-5 w-5 animate-spin text-primary" />}
         </div>
+      </FullScreen>
+    );
+  }
 
-        {/* Progress bar (overall) */}
-        <div className="mb-8 h-1.5 overflow-hidden rounded-full bg-secondary">
-          <div
-            className="h-full bg-gradient-to-r from-primary to-accent transition-all"
-            style={{ width: `${(doneCount / items.length) * 100}%` }}
+  // ===== REST SCREEN =====
+  if (phase === "rest") {
+    const next = items[idx + 1];
+    return (
+      <FullScreen tint="rest">
+        <TopBar idx={idx} total={items.length} overallPct={overallPct} workoutId={id} />
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/15 px-3 py-1">
+            <Coffee className="h-3.5 w-3.5 text-accent" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-accent">Rest</span>
+          </div>
+          <h1 className="mb-2 font-display text-3xl font-bold">Take a breath</h1>
+          {next && (
+            <p className="mb-8 text-sm text-muted-foreground">
+              Next: <span className="text-foreground">{next.ex.name}</span>
+            </p>
+          )}
+
+          <RingTimer
+            pct={restPct}
+            big={fmt(restLeft)}
+            small={`of ${fmt(restTotal)}`}
+            color="accent"
           />
-        </div>
 
-        {/* Section pill */}
-        <div className={`mb-4 inline-flex w-fit items-center gap-2 self-center rounded-full border ${meta.border} ${meta.bg} px-3 py-1`}>
+          <div className="mt-8 flex items-center gap-3">
+            <button
+              onClick={() => setRunning((r) => !r)}
+              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-foreground transition hover:bg-secondary/70"
+            >
+              {running ? <Pause className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6" />}
+            </button>
+            <button
+              onClick={skipRest}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-primary-foreground glow-primary transition hover:opacity-90"
+            >
+              Skip rest <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </FullScreen>
+    );
+  }
+
+  // ===== READY / WORKING SCREEN =====
+  return (
+    <FullScreen>
+      <TopBar idx={idx} total={items.length} overallPct={overallPct} workoutId={id} />
+
+      <div className="flex flex-1 flex-col items-center justify-center px-6 pb-8 text-center">
+        <div className={`mb-3 inline-flex items-center gap-2 rounded-full border ${meta.border} ${meta.bg} px-3 py-1`}>
           <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
           <span className={`text-xs font-semibold uppercase tracking-wider ${meta.color}`}>{meta.label}</span>
         </div>
 
-        {/* Exercise name */}
-        <h1 className="mb-2 text-center font-display text-4xl font-bold leading-tight">
+        <h1 className="mb-3 font-display text-4xl font-bold leading-tight md:text-5xl">
           {current.ex.name}
         </h1>
 
-        {/* Specs */}
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-2 text-xs">
+        <div className="mb-5 flex flex-wrap items-center justify-center gap-2 text-xs">
           {current.ex.sets && <Chip>{current.ex.sets} sets</Chip>}
           {current.ex.reps && <Chip>{current.ex.reps} reps</Chip>}
           {current.ex.duration && <Chip>{current.ex.duration}</Chip>}
           {current.ex.rest && <Chip tone="muted">rest {current.ex.rest}</Chip>}
-          <Chip tone="accent">target ~{fmtTarget(current.ex.target_seconds)}</Chip>
+          <Chip tone="accent">target ~{fmtTarget(target)}</Chip>
         </div>
 
-        {/* Notes */}
         {current.ex.notes && (
-          <div className="mb-6 flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm">
+          <div className="mb-6 flex max-w-md items-start gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-left text-sm">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <p className="text-muted-foreground">{current.ex.notes}</p>
           </div>
         )}
 
-        {/* Big timer */}
-        <div className="my-4 flex flex-1 flex-col items-center justify-center">
-          <div className="relative">
-            <svg className="h-64 w-64 -rotate-90" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="92" className="fill-none stroke-secondary" strokeWidth="10" />
-              <circle
-                cx="100" cy="100" r="92"
-                className="fill-none stroke-primary transition-all duration-300"
-                strokeWidth="10"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 92}
-                strokeDashoffset={2 * Math.PI * 92 * (1 - pct / 100)}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="font-display text-6xl font-bold tabular-nums text-gradient">
-                {fmt(elapsed)}
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                of ~{fmtTarget(target)}
-              </div>
-              {doneMap[currentKey!] && (
-                <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/20 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
-                  <Check className="h-3 w-3" /> Done
-                </div>
-              )}
-            </div>
-          </div>
+        <RingTimer
+          pct={phase === "working" ? workPct : 0}
+          big={fmt(workElapsed)}
+          small={`of ~${fmtTarget(target)}`}
+          color="primary"
+        />
 
-          {/* Controls */}
-          <div className="mt-8 flex items-center gap-3">
+        <div className="mt-8 flex items-center gap-3">
+          {phase === "ready" ? (
             <button
-              onClick={resetCurrent}
-              disabled={isCompleted || elapsed === 0}
-              title="Reset"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-muted-foreground transition hover:text-foreground disabled:opacity-40"
+              onClick={startExercise}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-bold text-primary-foreground glow-primary transition hover:opacity-90"
             >
-              <RotateCcw className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => setRunning((r) => !r)}
-              disabled={isCompleted}
-              className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:opacity-90 disabled:opacity-50 glow-primary"
-            >
-              {running ? <Pause className="h-7 w-7" /> : <Play className="ml-0.5 h-7 w-7" />}
-            </button>
-            <button
-              onClick={markDoneAndNext}
-              disabled={isCompleted}
-              title="Mark done & next"
-              className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary transition hover:bg-primary/30 disabled:opacity-40"
-            >
-              <Check className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom nav */}
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <button
-            onClick={goPrev}
-            disabled={idx === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold transition hover:bg-secondary/70 disabled:opacity-40"
-          >
-            <ChevronLeft className="h-4 w-4" /> Prev
-          </button>
-
-          {isLast ? (
-            <button
-              onClick={finishWorkout}
-              disabled={completing || isCompleted}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 glow-primary"
-            >
-              {completing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Finish workout
+              <Play className="h-5 w-5" /> Start
             </button>
           ) : (
-            <div className="text-xs text-muted-foreground">
-              {doneCount} / {items.length} done
-            </div>
-          )}
-
-          <button
-            onClick={goNext}
-            disabled={isLast}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold transition hover:bg-secondary/70 disabled:opacity-40"
-          >
-            Next <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Mini queue */}
-        <div className="mt-6 flex gap-1.5 overflow-x-auto pb-2">
-          {items.map((it, i) => {
-            const isDone = doneMap[it.key];
-            const isCur = i === idx;
-            return (
+            <>
               <button
-                key={it.key}
-                onClick={() => setIdx(i)}
-                className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-mono transition ${
-                  isCur ? "bg-primary text-primary-foreground" :
-                  isDone ? "bg-primary/20 text-primary" :
-                  "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-                title={it.ex.name}
+                onClick={() => { setRunning(false); setWorkElapsed(0); }}
+                disabled={workElapsed === 0}
+                title="Reset"
+                className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-muted-foreground transition hover:text-foreground disabled:opacity-40"
               >
-                {i + 1}
+                <RotateCcw className="h-5 w-5" />
               </button>
-            );
-          })}
+              <button
+                onClick={() => setRunning((r) => !r)}
+                className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-foreground shadow-lg transition hover:bg-secondary/70"
+              >
+                {running ? <Pause className="h-7 w-7" /> : <Play className="ml-0.5 h-7 w-7" />}
+              </button>
+              <button
+                onClick={finishExercise}
+                className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-semibold text-primary-foreground glow-primary transition hover:opacity-90"
+              >
+                <Check className="h-4 w-4" />
+                {idx === items.length - 1 ? "Finish" : "Done"}
+              </button>
+            </>
+          )}
         </div>
       </div>
+    </FullScreen>
+  );
+}
+
+function FullScreen({ children, tint }: { children: React.ReactNode; tint?: "rest" }) {
+  const bg = tint === "rest"
+    ? "bg-gradient-to-br from-accent/10 via-background to-background"
+    : "bg-gradient-to-br from-background via-secondary/20 to-background";
+  return (
+    <div className={`fixed inset-0 z-50 flex flex-col overflow-hidden ${bg}`}>
+      {children}
+    </div>
+  );
+}
+
+function TopBar({ idx, total, overallPct, workoutId }: { idx: number; total: number; overallPct: number; workoutId: string }) {
+  return (
+    <div className="w-full px-4 pt-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <Link
+          to="/workout/$id"
+          params={{ id: workoutId }}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" /> Exit
+        </Link>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">
+          {idx + 1} / {total}
+        </div>
+        <div className="w-[60px]" />
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+        <div
+          className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+          style={{ width: `${overallPct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RingTimer({ pct, big, small, color }: { pct: number; big: string; small: string; color: "primary" | "accent" }) {
+  const stroke = color === "primary" ? "stroke-primary" : "stroke-accent";
+  return (
+    <div className="relative">
+      <svg className="h-64 w-64 -rotate-90 sm:h-72 sm:w-72" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="92" className="fill-none stroke-secondary" strokeWidth="10" />
+        <circle
+          cx="100" cy="100" r="92"
+          className={`fill-none ${stroke} transition-all duration-300`}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={2 * Math.PI * 92}
+          strokeDashoffset={2 * Math.PI * 92 * (1 - pct / 100)}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="font-display text-6xl font-bold tabular-nums text-gradient sm:text-7xl">{big}</div>
+        <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{small}</div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-4 py-3">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="font-display text-xl font-bold tabular-nums">{value}</div>
     </div>
   );
 }
