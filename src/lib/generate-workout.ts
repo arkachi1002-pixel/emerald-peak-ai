@@ -13,6 +13,8 @@ export type Exercise = {
   duration?: string;
   rest?: string;
   notes?: string;
+  /** Recommended time for this exercise in seconds (including rest between sets). */
+  target_seconds: number;
 };
 
 export type WorkoutPlan = {
