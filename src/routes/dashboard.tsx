@@ -127,8 +127,17 @@ function Dashboard() {
       {/* Selected day panel */}
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-4 flex items-baseline justify-between">
-          <h3 className="font-display text-2xl font-bold">{format(selected, "EEEE, MMM d")}</h3>
-          {isSelectedToday && <span className="rounded-full bg-primary/20 px-3 py-1 text-xs font-semibold text-primary">TODAY</span>}
+          <div>
+            <h3 className="font-display text-2xl font-bold">{format(selected, "EEEE, MMM d")}</h3>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">
+              {getDaySchedule(selected).label}
+            </p>
+          </div>
+          {isSelectedToday && (
+            <span className="rounded-full bg-[color:var(--green-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--green-dark)]">
+              TODAY
+            </span>
+          )}
         </div>
 
         {selectedWorkout ? (
@@ -139,8 +148,8 @@ function Dashboard() {
                   <Check className="h-5 w-5" />
                 </div>
               ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/20">
-                  <Flame className="h-5 w-5 text-accent" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--green-soft)]">
+                  <Flame className="h-5 w-5 text-[color:var(--green-dark)]" />
                 </div>
               )}
               <div>
@@ -153,11 +162,17 @@ function Dashboard() {
             <Link
               to="/workout/$id"
               params={{ id: selectedWorkout.id }}
-              className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2 text-sm font-medium hover:bg-secondary/70"
+              className="btn-pill inline-flex bg-secondary text-foreground hover:bg-muted"
             >
               View workout →
             </Link>
           </div>
+        ) : getDaySchedule(selected).kind === "rest" ? (
+          <EmptyState
+            icon={<Coffee className="h-6 w-6 text-[color:var(--green-dark)]" />}
+            title={getDaySchedule(selected).label}
+            desc="Recover, hydrate, sleep. No training scheduled — Mon · Wed · Fri only."
+          />
         ) : isFuture ? (
           <EmptyState
             icon={<Lock className="h-6 w-6 text-muted-foreground" />}
@@ -167,22 +182,24 @@ function Dashboard() {
         ) : isPast ? (
           <EmptyState
             icon={<span className="text-2xl">💤</span>}
-            title="Rest day"
-            desc="No workout was logged for this day."
+            title="Missed session"
+            desc="No workout was logged for this training day."
           />
         ) : (
-          <div className="rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-accent/10 p-6">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+          <div className="rounded-xl border border-primary bg-[color:var(--green-soft)] p-6">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[color:var(--green-dark)]">
               <Sparkles className="h-4 w-4" />
               Today's action
             </div>
-            <h4 className="mb-2 font-display text-xl font-bold">Ready to train?</h4>
+            <h4 className="mb-2 font-display text-xl font-bold">
+              Ready to train? {(() => { const s = getDaySchedule(selected); return s.kind === "training" ? s.label : ""; })()}
+            </h4>
             <p className="mb-4 text-sm text-muted-foreground">
-              Complete a 30-second readiness check-in so the AI can dial in today's session.
+              30-second readiness check-in and your AI dials in today's split.
             </p>
             <Link
               to="/checkin"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90 glow-primary"
+              className="btn-pill inline-flex bg-primary text-primary-foreground hover:opacity-90 glow-primary"
             >
               Start daily check-in →
             </Link>
