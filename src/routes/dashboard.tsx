@@ -28,8 +28,9 @@ function Dashboard() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) router.navigate({ to: "/auth" });
-    else if (!profile?.onboarded) router.navigate({ to: "/onboarding" });
+    if (!user) { router.navigate({ to: "/auth" }); return; }
+    if (!profile) return; // wait for profile to load before deciding
+    if (!profile.onboarded) router.navigate({ to: "/onboarding" });
   }, [user, profile, loading, router]);
 
   useEffect(() => {
