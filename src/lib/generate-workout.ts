@@ -192,6 +192,31 @@ const WARMUP: Exercise[] = [
   { name: "Light Cardio Ramp-Up", duration: "3 min", target_seconds: 180 },
 ];
 
+// Extra warm-up for heavier builds: a bit more low-impact cardio to wake up the heart.
+const HEAVY_WARMUP_EXTRA: Exercise[] = [
+  { name: "Brisk Walk / Easy Bike", duration: "5 min", rest: "0s", target_seconds: 300, notes: "Low-impact warm-up — joints first." },
+];
+
+// Cardio finishers — used for Heavy body type and Fat Loss goal.
+const CARDIO_FINISHERS: Record<EquipTier, Exercise[]> = {
+  "Full Gym": [
+    { name: "Incline Treadmill Walk", duration: "10 min", rest: "0s", target_seconds: 600, notes: "Steady pace, ~120-140 bpm." },
+    { name: "Stationary Bike Intervals", sets: 6, duration: "40s on / 60s easy", rest: "60s", target_seconds: 600, notes: "Hard but sustainable." },
+    { name: "Rower — Steady", duration: "8 min", rest: "0s", target_seconds: 480, notes: "Long pulls, controlled breathing." },
+  ],
+  Home: [
+    { name: "Marching in Place", duration: "5 min", rest: "0s", target_seconds: 300, notes: "Pump knees, swing arms." },
+    { name: "Step-Ups (low bench)", sets: 4, reps: "20/side", rest: "45s", target_seconds: 480 },
+    { name: "Shadow Boxing", sets: 4, duration: "60s", rest: "30s", target_seconds: 360 },
+  ],
+  None: [
+    { name: "Marching in Place", duration: "5 min", rest: "0s", target_seconds: 300 },
+    { name: "Modified Jumping Jacks (step-out)", sets: 4, duration: "45s", rest: "30s", target_seconds: 300 },
+    { name: "Shadow Boxing", sets: 4, duration: "60s", rest: "30s", target_seconds: 360 },
+    { name: "Wall Push-up Burst", sets: 3, reps: "15", rest: "30s", target_seconds: 225 },
+  ],
+};
+
 const COOLDOWN: Exercise[] = [
   { name: "Target Muscle Static Stretch", duration: "60s/side", target_seconds: 120 },
   { name: "Thoracic Twist", duration: "60s", target_seconds: 60 },
