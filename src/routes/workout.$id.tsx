@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { WorkoutPlan, Exercise } from "@/lib/generate-workout";
+import { fmtTarget } from "@/lib/generate-workout";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/workout/$id")({
@@ -199,6 +200,7 @@ function Section({ sectionKey, icon, title, tone, items, timers, activeKey, disa
                   {ex.reps && <Badge>{ex.reps} reps</Badge>}
                   {ex.duration && <Badge>{ex.duration}</Badge>}
                   {ex.rest && <Badge tone="muted">rest {ex.rest}</Badge>}
+                  <Badge tone="time">~{fmtTarget(ex.target_seconds)}</Badge>
                 </div>
               </div>
 
@@ -237,9 +239,15 @@ function Section({ sectionKey, icon, title, tone, items, timers, activeKey, disa
   );
 }
 
-function Badge({ children, tone = "primary" }: { children: React.ReactNode; tone?: "primary" | "muted" }) {
+function Badge({ children, tone = "primary" }: { children: React.ReactNode; tone?: "primary" | "muted" | "time" }) {
+  const classes =
+    tone === "muted"
+      ? "bg-background text-muted-foreground"
+      : tone === "time"
+        ? "bg-accent/20 text-accent"
+        : "bg-primary/15 text-primary";
   return (
-    <span className={`rounded-md px-2 py-1 font-mono ${tone === "muted" ? "bg-background text-muted-foreground" : "bg-primary/15 text-primary"}`}>
+    <span className={`rounded-md px-2 py-1 font-mono ${classes}`}>
       {children}
     </span>
   );
