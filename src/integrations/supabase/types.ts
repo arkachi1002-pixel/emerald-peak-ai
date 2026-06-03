@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          body_type: string | null
           created_at: string
           display_name: string | null
           equipment: string | null
@@ -27,6 +28,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          body_type?: string | null
           created_at?: string
           display_name?: string | null
           equipment?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          body_type?: string | null
           created_at?: string
           display_name?: string | null
           equipment?: string | null
