@@ -39,6 +39,7 @@ function CheckIn() {
       experience: profile.experience_level,
       equipment: profile.equipment,
       goal: profile.main_goal,
+      bodyType: (profile as { body_type?: string | null }).body_type ?? null,
       energy,
       soreness,
       minutes,
