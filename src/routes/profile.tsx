@@ -35,6 +35,7 @@ function Profile() {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const [daysDraft, setDaysDraft] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
@@ -62,12 +63,18 @@ function Profile() {
         equipment: profile.equipment ?? "",
         main_goal: profile.main_goal ?? "",
       });
+      setDaysDraft(((profile as { training_days?: string[] | null }).training_days) ?? []);
     }
   }, [profile, editing]);
 
+  const toggleDay = (d: string) => {
+    setDaysDraft((cur) => cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]);
+  };
+
   const save = async () => {
     if (!user) return;
-    const { error } = await supabase.from("profiles").update(draft as never).eq("id", user.id);
+    const payload = { ...draft, training_days: daysDraft } as never;
+    const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
     if (error) { toast.error(error.message); return; }
     await refreshProfile();
     setEditing(false);
