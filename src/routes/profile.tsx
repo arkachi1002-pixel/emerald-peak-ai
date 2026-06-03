@@ -147,7 +147,38 @@ function Profile() {
               </div>
             ))}
           </div>
+
+          {/* Training days */}
+          <div className="mt-6">
+            <div className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Training days</div>
+            <div className="flex flex-wrap gap-2">
+              {DAYS.map((d) => {
+                const active = editing
+                  ? daysDraft.includes(d)
+                  : (((profile as { training_days?: string[] | null }).training_days) ?? []).includes(d);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    disabled={!editing}
+                    onClick={() => editing && toggleDay(d)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary/40 text-muted-foreground"
+                    } ${editing ? "cursor-pointer hover:opacity-90" : "cursor-default"}`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+            {editing && (
+              <p className="mt-2 text-xs text-muted-foreground">Tap a day to toggle it on or off.</p>
+            )}
+          </div>
         </div>
+
 
         {/* History */}
         <div className="rounded-2xl border border-border bg-card p-6">
