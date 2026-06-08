@@ -32,14 +32,25 @@ Do not add `SUPABASE_SERVICE_ROLE_KEY` to Vercel unless you later add trusted se
 
 ## Supabase Auth URLs
 
-In Supabase Auth settings, add your Vercel URL after deploy:
+In Supabase Auth settings, set the production URL so email confirmation links do not point to localhost.
+
+Go to Supabase Dashboard -> Authentication -> URL Configuration and set:
 
 ```text
-https://your-project.vercel.app
-https://your-project.vercel.app/**
+Site URL:
+https://emerald-peak-ai.vercel.app
 ```
 
-For preview deployments, also add the preview domain pattern you use.
+Add these Redirect URLs:
+
+```text
+https://emerald-peak-ai.vercel.app
+https://emerald-peak-ai.vercel.app/**
+http://localhost:3000
+http://localhost:3000/**
+```
+
+Keep localhost only for local development. Production signups should be made from `https://emerald-peak-ai.vercel.app`, not from `http://localhost:3000`.
 
 ## Supabase Database Migrations
 
