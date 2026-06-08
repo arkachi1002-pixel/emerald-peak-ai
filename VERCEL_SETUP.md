@@ -5,7 +5,9 @@
 - Framework Preset: Other
 - Install Command: `npm install`
 - Build Command: `npm run build`
-- Output Directory: `dist`
+- Output Directory: leave empty/default. Do not set this to `dist`.
+
+This app uses TanStack Start with Nitro's Vercel preset. The build generates Vercel Build Output API files in `.vercel/output`, including `.vercel/output/config.json`, `.vercel/output/static`, and `.vercel/output/functions/__server.func`.
 
 ## Environment Variables
 

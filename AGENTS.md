@@ -18,7 +18,8 @@ Project deployment and environment rules
   - Framework Preset: `Other`
   - Install Command: `npm install`
   - Build Command: `npm run build`
-  - Output Directory: `dist`
+  - Output Directory: leave empty/default; do not set it to `dist`.
+  - TanStack Start/Nitro Vercel builds should generate `.vercel/output`.
   - Ensure `NITRO_PRESET=vercel` is set in Vercel env for Nitro builds that target Vercel.
 
 Keep this file in the repository - future Codex/agent runs should check and preserve these rules.
