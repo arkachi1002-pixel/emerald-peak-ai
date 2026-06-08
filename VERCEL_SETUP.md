@@ -40,3 +40,19 @@ https://your-project.vercel.app/**
 ```
 
 For preview deployments, also add the preview domain pattern you use.
+
+## Supabase Database Migrations
+
+This repo has SQL migrations in `supabase/migrations`. Apply them to the same Supabase project used by the app before relying on runtime database queries.
+
+```powershell
+$env:PATH = "C:\Program Files\nodejs;" + $env:PATH
+npx supabase login
+npx supabase link --project-ref nhyalhpiwcrbdjdwmfpe
+npx supabase db push --linked --dry-run
+npx supabase db push --linked
+```
+
+If the CLI asks for the database password, find it in Supabase Dashboard -> Project Settings -> Database.
+
+Manual alternative: open Supabase Dashboard -> SQL Editor, then run every SQL file from `supabase/migrations` in filename order.
