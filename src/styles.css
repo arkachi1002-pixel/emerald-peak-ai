@@ -3,7 +3,9 @@
 @import "tw-animate-css";
 
 /* MongoDB-inspired design system (via getdesign add mongodb) */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Source+Code+Pro:wght@400;500&display=swap");
+/* Remote @import removed: prefer adding font links in the HTML document <head>
+  to avoid Lightning CSS/Vite build issues. Example:
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Source+Code+Pro:wght@400;500&display=swap"> */
 
 @custom-variant dark (&:is(.dark *));
 
