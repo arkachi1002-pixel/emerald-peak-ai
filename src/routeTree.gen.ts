@@ -16,6 +16,7 @@ import { Route as CheckinRouteImport } from './routes/checkin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkoutIdRouteImport } from './routes/workout.$id'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as WorkoutIdIndexRouteImport } from './routes/workout.$id.index'
 import { Route as WorkoutIdSessionRouteImport } from './routes/workout.$id.session'
 
@@ -54,6 +55,11 @@ const WorkoutIdRoute = WorkoutIdRouteImport.update({
   path: '/workout/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const WorkoutIdIndexRoute = WorkoutIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -67,33 +73,36 @@ const WorkoutIdSessionRoute = WorkoutIdSessionRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/workout/$id': typeof WorkoutIdRouteWithChildren
   '/workout/$id/session': typeof WorkoutIdSessionRoute
   '/workout/$id/': typeof WorkoutIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/workout/$id/session': typeof WorkoutIdSessionRoute
   '/workout/$id': typeof WorkoutIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/checkin': typeof CheckinRoute
   '/dashboard': typeof DashboardRoute
   '/onboarding': typeof OnboardingRoute
   '/profile': typeof ProfileRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/workout/$id': typeof WorkoutIdRouteWithChildren
   '/workout/$id/session': typeof WorkoutIdSessionRoute
   '/workout/$id/': typeof WorkoutIdIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/onboarding'
     | '/profile'
+    | '/auth/callback'
     | '/workout/$id'
     | '/workout/$id/session'
     | '/workout/$id/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/onboarding'
     | '/profile'
+    | '/auth/callback'
     | '/workout/$id/session'
     | '/workout/$id'
   id:
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/onboarding'
     | '/profile'
+    | '/auth/callback'
     | '/workout/$id'
     | '/workout/$id/session'
     | '/workout/$id/'
@@ -135,7 +147,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   CheckinRoute: typeof CheckinRoute
   DashboardRoute: typeof DashboardRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/workout/$id/': {
       id: '/workout/$id/'
       path: '/'
@@ -211,6 +230,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface WorkoutIdRouteChildren {
   WorkoutIdSessionRoute: typeof WorkoutIdSessionRoute
   WorkoutIdIndexRoute: typeof WorkoutIdIndexRoute
@@ -227,7 +256,7 @@ const WorkoutIdRouteWithChildren = WorkoutIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   CheckinRoute: CheckinRoute,
   DashboardRoute: DashboardRoute,
   OnboardingRoute: OnboardingRoute,

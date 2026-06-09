@@ -3,7 +3,7 @@ import { Dumbbell, Calendar, User, LogOut, Flame } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { signOut, profile } = useAuth();
+  const { signOut, user, profile } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -32,6 +32,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <nav className="flex items-center gap-1">
             <NavBtn to="/dashboard" icon={<Calendar className="h-4 w-4" />} label="Today" />
             <NavBtn to="/profile" icon={<User className="h-4 w-4" />} label="Profile" />
+            {user?.email && (
+              <span className="hidden max-w-[220px] truncate px-2 text-sm text-muted-foreground md:inline">
+                {user.email}
+              </span>
+            )}
             <button
               onClick={handleSignOut}
               className="btn-pill bg-primary text-primary-foreground hover:opacity-90 ml-1 hidden sm:inline-flex items-center gap-1.5"
