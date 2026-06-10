@@ -5,7 +5,7 @@ import { Check, Lock, Flame, Sparkles, ChevronLeft, ChevronRight, Coffee } from 
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { getDaySchedule, WEEK_SCHEDULE } from "@/lib/generate-workout";
+import { getDaySchedule, normalizeTrainingDays } from "@/lib/generate-workout";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · AI_COACH" }] }),
@@ -45,6 +45,7 @@ function Dashboard() {
   }, [user]);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const trainingDays = normalizeTrainingDays(profile?.training_days);
   const today = startOfDay(new Date());
 
   const workoutByDate = useMemo(() => {
@@ -93,7 +94,7 @@ function Dashboard() {
             const isSel = format(selected, "yyyy-MM-dd") === key;
             const isFut = isAfter(d, today);
             const done = w?.status === "completed";
-            const sched = WEEK_SCHEDULE[d.getDay()];
+            const sched = getDaySchedule(d, trainingDays);
             const isRest = sched.kind === "rest";
             return (
               <button
@@ -131,7 +132,7 @@ function Dashboard() {
           <div>
             <h3 className="font-display text-2xl font-bold">{format(selected, "EEEE, MMM d")}</h3>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">
-              {getDaySchedule(selected).label}
+              {getDaySchedule(selected, trainingDays).label}
             </p>
           </div>
           {isSelectedToday && (
@@ -168,11 +169,11 @@ function Dashboard() {
               View workout →
             </Link>
           </div>
-        ) : getDaySchedule(selected).kind === "rest" ? (
+        ) : getDaySchedule(selected, trainingDays).kind === "rest" ? (
           <EmptyState
             icon={<Coffee className="h-6 w-6 text-[color:var(--green-dark)]" />}
-            title={getDaySchedule(selected).label}
-            desc="Recover, hydrate, sleep. No training scheduled — Mon · Wed · Fri only."
+            title={getDaySchedule(selected, trainingDays).label}
+            desc={`Recover, hydrate, sleep. Your training days are ${trainingDays.join(" · ")}.`}
           />
         ) : isFuture ? (
           <EmptyState
@@ -193,10 +194,10 @@ function Dashboard() {
               Today's action
             </div>
             <h4 className="mb-2 font-display text-xl font-bold">
-              Ready to train? {(() => { const s = getDaySchedule(selected); return s.kind === "training" ? s.label : ""; })()}
+              Ready to train? {(() => { const s = getDaySchedule(selected, trainingDays); return s.kind === "training" ? s.label : ""; })()}
             </h4>
             <p className="mb-4 text-sm text-muted-foreground">
-              30-second readiness check-in and your AI dials in today's split.
+              30-second readiness check-in and your AI dials in today's plan.
             </p>
             <Link
               to="/checkin"

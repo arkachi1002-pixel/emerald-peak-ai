@@ -7,8 +7,10 @@ type Profile = {
   display_name: string | null;
   sport_type: string | null;
   experience_level: string | null;
+  body_type?: string | null;
   equipment: string | null;
   main_goal: string | null;
+  training_days?: string[] | null;
   onboarded: boolean;
 };
 

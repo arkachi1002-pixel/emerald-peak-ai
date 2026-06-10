@@ -4,7 +4,7 @@ import { Battery, Activity, Clock, Sparkles, Loader2, Coffee } from "lucide-reac
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { generateWorkout, getDaySchedule } from "@/lib/generate-workout";
+import { generateWorkout, getDaySchedule, normalizeTrainingDays } from "@/lib/generate-workout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -40,6 +40,7 @@ function CheckIn() {
       equipment: profile.equipment,
       goal: profile.main_goal,
       bodyType: (profile as { body_type?: string | null }).body_type ?? null,
+      trainingDays: profile.training_days,
       energy,
       soreness,
       minutes,
@@ -78,7 +79,8 @@ function CheckIn() {
   if (!user) return null;
 
   const today = new Date();
-  const schedule = getDaySchedule(today);
+  const trainingDays = normalizeTrainingDays(profile?.training_days);
+  const schedule = getDaySchedule(today, trainingDays);
 
   if (schedule.kind === "rest") {
     return (
@@ -93,7 +95,7 @@ function CheckIn() {
             </div>
             <h1 className="font-display text-3xl font-bold">No training today</h1>
             <p className="mt-2 text-muted-foreground">
-              Your split runs <b>Mon · Wed · Fri</b>. Recover well — eat, hydrate, sleep.
+              Your plan runs <b>{trainingDays.join(" · ")}</b>. Recover well - eat, hydrate, sleep.
               Your next session is coming up.
             </p>
             <Link

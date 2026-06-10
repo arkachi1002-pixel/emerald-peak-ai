@@ -40,6 +40,7 @@ type Inputs = {
   minutes: number;
   /** JS day index: 0=Sun … 6=Sat. Defaults to today. */
   dayOfWeek?: number;
+  trainingDays?: string[] | null;
 };
 
 export type DaySchedule =
@@ -57,8 +58,79 @@ export const WEEK_SCHEDULE: Record<number, DaySchedule> = {
   6: { kind: "rest", label: "Rest day" },
 };
 
-export function getDaySchedule(date: Date = new Date()): DaySchedule {
-  return WEEK_SCHEDULE[date.getDay()];
+export function getDaySchedule(date: Date = new Date(), trainingDays?: string[] | null): DaySchedule {
+  return getAdaptiveDaySchedule(date, trainingDays);
+}
+
+export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const DEFAULT_TRAINING_DAYS = ["Mon", "Wed", "Fri"];
+
+const SPLIT_TEMPLATES: Record<number, Array<{ label: string; groups: string[] }>> = {
+  1: [{ label: "Full Body Strength", groups: ["Chest", "Back", "Legs", "Shoulders"] }],
+  2: [
+    { label: "Upper Body", groups: ["Chest", "Back", "Shoulders"] },
+    { label: "Lower Body + Arms", groups: ["Legs", "Biceps", "Triceps"] },
+  ],
+  3: [
+    { label: "Chest + Biceps", groups: ["Chest", "Biceps"] },
+    { label: "Back + Triceps", groups: ["Back", "Triceps"] },
+    { label: "Shoulders + Legs", groups: ["Shoulders", "Legs"] },
+  ],
+  4: [
+    { label: "Upper Strength", groups: ["Chest", "Back"] },
+    { label: "Lower Strength", groups: ["Legs"] },
+    { label: "Upper Volume", groups: ["Shoulders", "Biceps", "Triceps"] },
+    { label: "Full Body Pump", groups: ["Chest", "Back", "Legs"] },
+  ],
+  5: [
+    { label: "Push", groups: ["Chest", "Shoulders", "Triceps"] },
+    { label: "Pull", groups: ["Back", "Biceps"] },
+    { label: "Legs", groups: ["Legs"] },
+    { label: "Upper + Arms", groups: ["Chest", "Back", "Biceps", "Triceps"] },
+    { label: "Full Body", groups: ["Legs", "Shoulders", "Chest", "Back"] },
+  ],
+  6: [
+    { label: "Push Strength", groups: ["Chest", "Shoulders", "Triceps"] },
+    { label: "Pull Strength", groups: ["Back", "Biceps"] },
+    { label: "Legs Strength", groups: ["Legs"] },
+    { label: "Push Volume", groups: ["Chest", "Shoulders", "Triceps"] },
+    { label: "Pull Volume", groups: ["Back", "Biceps"] },
+    { label: "Legs + Full Body", groups: ["Legs", "Chest", "Back"] },
+  ],
+  7: [
+    { label: "Push Strength", groups: ["Chest", "Shoulders", "Triceps"] },
+    { label: "Pull Strength", groups: ["Back", "Biceps"] },
+    { label: "Legs Strength", groups: ["Legs"] },
+    { label: "Upper Volume", groups: ["Chest", "Back", "Shoulders"] },
+    { label: "Lower + Arms", groups: ["Legs", "Biceps", "Triceps"] },
+    { label: "Full Body Pump", groups: ["Chest", "Back", "Legs"] },
+    { label: "Mobility + Weak Points", groups: ["Shoulders", "Biceps", "Triceps"] },
+  ],
+};
+
+export function normalizeTrainingDays(trainingDays?: string[] | null): string[] {
+  const picked = (trainingDays?.length ? trainingDays : DEFAULT_TRAINING_DAYS)
+    .filter((day) => DAY_LABELS.includes(day as (typeof DAY_LABELS)[number]));
+
+  return [...new Set(picked)].sort(
+    (a, b) =>
+      DAY_LABELS.indexOf(a as (typeof DAY_LABELS)[number]) -
+      DAY_LABELS.indexOf(b as (typeof DAY_LABELS)[number]),
+  );
+}
+
+export function getAdaptiveDaySchedule(date: Date = new Date(), trainingDays?: string[] | null): DaySchedule {
+  const days = normalizeTrainingDays(trainingDays);
+  const todayLabel = DAY_LABELS[date.getDay()];
+  const slot = days.indexOf(todayLabel);
+
+  if (slot === -1) {
+    return { kind: "rest", label: days.length >= 5 ? "Recovery day" : "Active recovery" };
+  }
+
+  const templates = SPLIT_TEMPLATES[Math.min(Math.max(days.length, 1), 7)];
+  const plan = templates[slot % templates.length];
+  return { kind: "training", label: plan.label, groups: plan.groups };
 }
 
 // Exercises grouped by muscle and equipment tier.
@@ -240,7 +312,7 @@ function mapBodyType(b: string | null | undefined): BodyTier {
 
 export function generateWorkout(inputs: Inputs): WorkoutPlan {
   const day = inputs.dayOfWeek ?? new Date().getDay();
-  const schedule = WEEK_SCHEDULE[day];
+  const schedule = getDaySchedule(new Date(2026, 0, 4 + day), inputs.trainingDays);
   const tier = mapEquipment(inputs.equipment);
   const body = mapBodyType(inputs.bodyType);
 

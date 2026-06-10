@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Dumbbell, Trophy, Wrench, Target, ChevronRight, Loader2, User } from "lucide-react";
+import { CalendarDays, Dumbbell, Trophy, Wrench, Target, ChevronRight, Loader2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -41,13 +41,26 @@ const STEPS = [
     icon: Target,
     options: ["Strength", "Endurance", "Muscle Mass", "Fat Loss"],
   },
+  {
+    key: "training_days" as const,
+    title: "Training frequency",
+    icon: CalendarDays,
+    options: ["3 days / week", "4 days / week", "5 days / week", "6 days / week"],
+  },
 ];
+
+const TRAINING_DAY_PRESETS: Record<string, string[]> = {
+  "3 days / week": ["Mon", "Wed", "Fri"],
+  "4 days / week": ["Mon", "Tue", "Thu", "Fri"],
+  "5 days / week": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  "6 days / week": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+};
 
 function Onboarding() {
   const { user, loading: authLoading, refreshProfile } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<Record<string, string>>({});
+  const [data, setData] = useState<Record<string, string | string[]>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -58,7 +71,10 @@ function Onboarding() {
   const Icon = current.icon;
 
   const pick = (val: string) => {
-    const next = { ...data, [current.key]: val };
+    const next = {
+      ...data,
+      [current.key]: current.key === "training_days" ? TRAINING_DAY_PRESETS[val] : val,
+    };
     setData(next);
     if (step < STEPS.length - 1) {
       setStep(step + 1);
@@ -67,7 +83,7 @@ function Onboarding() {
     }
   };
 
-  const finish = async (final: Record<string, string>) => {
+  const finish = async (final: Record<string, string | string[]>) => {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase

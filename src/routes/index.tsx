@@ -88,7 +88,7 @@ function LandingPage() {
               <span className="text-gradient">AI_COACH</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              Daily readiness check-ins, adaptive 3-day split workouts, and intelligent progress tracking — all powered by AI.
+              Daily readiness check-ins, adaptive training splits from 3 to 6 days, and intelligent progress tracking.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               {isAuthed ? (
@@ -142,7 +142,7 @@ function LandingPage() {
                   <span className="font-display font-bold">Weekly Schedule</span>
                 </div>
                 <span className="rounded-full bg-[color:var(--green-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--green-dark)]">
-                  Mon · Wed · Fri
+                  3-6 days / week
                 </span>
               </div>
               <div className="grid grid-cols-7 gap-2">
@@ -174,10 +174,10 @@ function LandingPage() {
               <div className="mt-4 rounded-xl border border-primary/30 bg-[color:var(--green-soft)] p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--green-dark)]">
                   <Brain className="h-4 w-4" />
-                  Monday — Chest + Biceps
+                  Adaptive Split
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Bench Press · Incline Dumbbell Press · Cable Flys · Barbell Curls · Hammer Curls
+                  Push / Pull / Legs, Upper / Lower, or Full Body depending on your chosen schedule.
                 </p>
               </div>
             </div>
@@ -205,8 +205,8 @@ function LandingPage() {
             />
             <FeatureCard
               icon={<CalendarDays className="h-6 w-6" />}
-              title="3-Day Split Calendar"
-              desc="Monday Chest+Biceps, Wednesday Triceps+Back, Friday Shoulders+Legs. Rest days built in."
+              title="Adaptive Split Calendar"
+              desc="Choose 3, 4, 5, or 6 training days. The app reshapes your week instead of forcing one fixed split."
             />
             <FeatureCard
               icon={<TrendingUp className="h-6 w-6" />}
