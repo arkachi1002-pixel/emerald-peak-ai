@@ -4,7 +4,8 @@ import { Battery, Activity, Clock, Sparkles, Loader2, Coffee } from "lucide-reac
 import { AppShell } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { generateWorkout, getDaySchedule, normalizeTrainingDays } from "@/lib/generate-workout";
+import { generateWorkoutAi } from "@/lib/api/generate-workout.functions";
+import { getDaySchedule, normalizeTrainingDays } from "@/lib/generate-workout";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -31,10 +32,7 @@ function CheckIn() {
     if (!user || !profile) return;
     setGenerating(true);
 
-    // simulate AI think time
-    await new Promise((r) => setTimeout(r, 1200));
-
-    const plan = generateWorkout({
+    const plan = await generateWorkoutAi({
       sport: profile.sport_type,
       experience: profile.experience_level,
       equipment: profile.equipment,
