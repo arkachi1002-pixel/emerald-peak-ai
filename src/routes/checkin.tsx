@@ -33,16 +33,18 @@ function CheckIn() {
     setGenerating(true);
 
     const plan = await generateWorkoutAi({
-      sport: profile.sport_type,
-      experience: profile.experience_level,
-      equipment: profile.equipment,
-      goal: profile.main_goal,
-      bodyType: (profile as { body_type?: string | null }).body_type ?? null,
-      trainingDays: profile.training_days,
-      energy,
-      soreness,
-      minutes,
-      dayOfWeek: new Date().getDay(),
+      data: {
+        sport: profile.sport_type,
+        experience: profile.experience_level,
+        equipment: profile.equipment,
+        goal: profile.main_goal,
+        bodyType: (profile as { body_type?: string | null }).body_type ?? null,
+        trainingDays: profile.training_days,
+        energy,
+        soreness,
+        minutes,
+        dayOfWeek: new Date().getDay(),
+      },
     });
 
     const today = format(new Date(), "yyyy-MM-dd");
