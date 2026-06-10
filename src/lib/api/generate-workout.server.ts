@@ -3,7 +3,7 @@ import process from "node:process";
 import { WorkoutPlan, Inputs, getDaySchedule } from "../generate-workout";
 
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
-const GEMINI_ENDPOINT = `https://gemini.labs.google.com/v1/models/${GEMINI_MODEL}:generate`;
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function buildPrompt(inputs: Inputs) {
   const trainingDays = inputs.trainingDays?.length
@@ -60,15 +60,38 @@ Set ai_note to a short summary of why this plan fits the user's current state.
 `;
 }
 
-function extractTextFromGeminiResponse(responseJson: any): string {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getStringProperty(value: unknown, key: string): string | undefined {
+  if (!isRecord(value)) return undefined;
+  const property = value[key];
+  return typeof property === "string" ? property : undefined;
+}
+
+function extractTextFromGeminiResponse(responseJson: unknown): string {
   if (!responseJson) return "";
-  if (typeof responseJson.output_text === "string") return responseJson.output_text;
-  if (Array.isArray(responseJson.candidates) && responseJson.candidates[0]?.content?.[0]?.text) {
-    return responseJson.candidates[0].content[0].text;
+  const outputText = getStringProperty(responseJson, "output_text");
+  if (outputText) return outputText;
+
+  const candidates = isRecord(responseJson) ? responseJson.candidates : undefined;
+  const firstCandidate = Array.isArray(candidates) ? candidates[0] : undefined;
+  const content = isRecord(firstCandidate) ? firstCandidate.content : undefined;
+  const parts = isRecord(content) ? content.parts : undefined;
+  if (Array.isArray(parts)) {
+    return parts.map((part) => getStringProperty(part, "text") ?? "").join("");
   }
-  if (Array.isArray(responseJson.output?.[0]?.content) && responseJson.output[0].content[0]?.text) {
-    return responseJson.output[0].content[0].text;
+
+  const output = isRecord(responseJson) ? responseJson.output : undefined;
+  const firstOutput = Array.isArray(output) ? output[0] : undefined;
+  const outputContent = isRecord(firstOutput) ? firstOutput.content : undefined;
+  const firstContent = Array.isArray(outputContent) ? outputContent[0] : undefined;
+  const text = getStringProperty(firstContent, "text");
+  if (text) {
+    return text;
   }
+
   return JSON.stringify(responseJson);
 }
 
@@ -79,25 +102,26 @@ export async function aiGenerateWorkoutPlan(inputs: Inputs): Promise<WorkoutPlan
   }
 
   const prompt = buildPrompt(inputs);
+  const url = `${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
 
-  const response = await fetch(GEMINI_ENDPOINT, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
-      prompt: {
-        messages: [{ role: "user", content: [{ type: "text", text: prompt }] }],
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 2048,
+        responseMimeType: "application/json",
       },
-      temperature: 0.2,
-      max_output_tokens: 1024,
-      candidate_count: 1,
     }),
   });
 
   const responseText = await response.text();
-  let responseJson: any;
+  let responseJson: unknown;
 
   try {
     responseJson = JSON.parse(responseText);
@@ -106,7 +130,8 @@ export async function aiGenerateWorkoutPlan(inputs: Inputs): Promise<WorkoutPlan
   }
 
   if (!response.ok) {
-    const errorBody = responseJson?.error || responseText;
+    const errorBody =
+      isRecord(responseJson) && responseJson.error ? responseJson.error : responseText;
     throw new Error(`Gemini request failed: ${response.status} ${JSON.stringify(errorBody)}`);
   }
 
@@ -125,7 +150,8 @@ export async function aiGenerateWorkoutPlan(inputs: Inputs): Promise<WorkoutPlan
   try {
     const plan = JSON.parse(jsonText) as WorkoutPlan;
     return plan;
-  } catch (error: any) {
-    throw new Error(`Failed to parse Gemini workout JSON: ${error.message}. Raw output: ${cleaned}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown parse error";
+    throw new Error(`Failed to parse Gemini workout JSON: ${message}. Raw output: ${cleaned}`);
   }
 }
